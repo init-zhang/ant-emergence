@@ -7,6 +7,7 @@ const HOME_FALLOFF     = 20;
 */
 const FOOP_DISTANCE_SQUARED = 100 ** 2;
 const FOOP_POWER       = 1;
+const FOOP_FREQUENCY   = 100000000;
 const MAX_VELOCITY     = 5;
 const MAX_ACCELERATION = 0.5;
 const LINE_MULTIPLIER = 10;
@@ -103,14 +104,14 @@ class Ant {
     }
 
     scout() {
-        if (this.pheromoneTimer === this.config.homeFrequency) {
+        if (this.pheromoneTimer >= this.config.homeFrequency) {
             this.board.createPheronome(this.x, this.y, "HOME");
             this.pheromoneTimer = 0;
         } else {
             this.pheromoneTimer++;
         }
 
-        if (this.timer >= randomInclusiveInt(500, 2000)) {
+        if (this.timer >= randomInclusiveInt(500, 1000)) {
             this.state = "HOME";
             this.timer = 0;
         } else {
@@ -135,18 +136,18 @@ class Ant {
     }
 
     home() {
-        if (this.pheromoneTimer === this.config.homeFrequency) {
+        if (this.pheromoneTimer >= this.config.foopFrequency) {
             this.board.createPheronome(this.x, this.y, "FOOD");
             this.pheromoneTimer = 0;
         } else {
             this.pheromoneTimer++;
         }
 
-        if (this.timer >= randomInclusiveInt(200, 1000)) {
+        if (distanceSquared(this, {
+            x: this.config.width / 5, y: this.config.height / 5
+        }) < this.config.homeDistanceSquared) {
             this.state = "SCOUT";
             this.timer = 0;
-        } else {
-            this.timer++;
         }
 
         if (this.homePheromones.length === 0) return;
@@ -272,6 +273,9 @@ class Board {
         this.ctx.fillStyle = `rgba(255,255,255,${1-this.config.trail})`;
         this.ctx.fillRect(0, 0, this.config.width, this.config.height);
 
+        this.ctx.fillStyle = "black";
+        this.ctx.fillRect(this.config.width / 5 - 20, this.config.height / 5 - 20, 40, 40);
+
         this.ctx.fillStyle = "green";
         for (const pheromone of this.homePheromones) {
             this.ctx.fillRect(pheromone.x - 5, pheromone.y - 5, 10, 10);
@@ -308,8 +312,8 @@ class Board {
         for (const pheromone of this.homePheromones) pheromone.update();
         for (const pheromone of this.foodPheromones) pheromone.update();
 
-        this.homePheromones = this.homePheromones.filter((pheromone) => pheromone.age <= 500);
-        this.foodPheromones = this.foodPheromones.filter((pheromone) => pheromone.age <= 100);
+        this.homePheromones = this.homePheromones.filter((pheromone) => pheromone.age <= 800);
+        this.foodPheromones = this.foodPheromones.filter((pheromone) => pheromone.age <= 200);
 
         this.draw();
     }
@@ -332,6 +336,7 @@ const defaultConfig = {
     */
     foopDistanceSquared: FOOP_DISTANCE_SQUARED,
     foopPower: FOOP_POWER,
+    foopFrequency: FOOP_FREQUENCY,
     maxVelocity: MAX_VELOCITY,
     maxAcceleration: MAX_ACCELERATION,
     lineMultiplier: LINE_MULTIPLIER,
