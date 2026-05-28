@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="./ants.js" defer></script>
+        <title>Ants</title>
+        <style>
+            body, html {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            canvas {
+                display: block;
+            }
+
+            #controls {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="controls">
+            <details>
+                <summary>Controls</summary>
+                <hr />
+
+                <div>
+                    <input type="range" id="distance" name="distance" min="0" max="400" step="20" value="1" />
+                    (<span id="distanceValue">0</span>)
+                    <label for="distance">Distance</label>
+                </div>
+
+                <div>
+                    <input type="range" id="separationDistance" name="separationDistance" min="0" max="200" step="10" />
+                    (<span id="separationDistanceValue">0</span>)
+                    <label for="separationDistance">Separation Distance</label>
+                </div>
+
+                <div>
+                    <input type="range" id="separationPower" name="separationPower" min="0" max="1" step="0.1" />
+                    (<span id="separationPowerValue">0</span>)
+                    <label for="separationPower">Separation Power</label>
+                </div>
+
+                <div>
+                    <input type="range" id="alignmentPower" name="alignmentPower" min="0" max="1" step="0.1" />
+                    (<span id="alignmentPowerValue">0</span>)
+                    <label for="alignmentPower">Alignment Power</label>
+                </div>
+
+                <div>
+                    <input type="range" id="cohesionPower" name="cohesionPower" min="0" max="1" step="0.1" />
+                    (<span id="cohesionPowerValue">0</span>)
+                    <label for="cohesionPower">Cohesion Power</label>
+                </div>
+
+                <div>
+                    <input type="range" id="maxVelocity" name="maxVelocity" min="1" max="10" step="1" />
+                    (<span id="maxVelocityValue">0</span>)
+                    <label for="maxVelocity">Max Velocity</label>
+                </div>
+
+                <div>
+                    <input type="range" id="maxAcceleration" name="maxAcceleration" min="0.1" max="2" step="0.1" />
+                    (<span id="maxAccelerationValue">0</span>)
+                    <label for="maxAcceleration">Max Acceleration</label>
+                </div>
+
+                <div>
+                    <input type="range" id="lineMultiplier" name="lineMultiplier" min="0" max="20" step="1" />
+                    (<span id="lineMultiplierValue">0</span>)
+                    <label for="lineMultiplier">Line Multiplier</label>
+                </div>
+
+                <div>
+                    <input type="range" id="trail" name="trail" min="0" max="0.9" step="0.1" />
+                    (<span id="trailValue">0</span>)
+                    <label for="trail">Trail</label>
+                </div>
+
+                <div>
+                    <input type="button" id="toggle" name="toggle" value="Pause" />
+                    <input type="button" id="restart" name="restart" value="Restart" />
+                    <input type="number" id="ants" name="ants" value="100" min="0" /><label for="ants">Ants</label>
+                </div>
+
+                <hr />
+
+                <div>
+                    <input type="checkbox" id="follow" name="follow" />
+                    <label for="follow">Follow mouse</label>
+                </div>
+
+                <div>
+                    <input type="checkbox" id="avoid" name="avoid" />
+                    <label for="avoid">Avoid mouse</label>
+                </div>
+
+            </details>
+        </div>
+        <canvas width="500" height="500" id="canvas"></canvas>
+    </body>
+</html>
