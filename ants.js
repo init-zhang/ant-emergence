@@ -1,10 +1,14 @@
-const ANTS = 100;
+const ANTS = 1;
 const HOME_DISTANCE_SQUARED = 100 ** 2;
-const HOME_POWER       = 1
+const HOME_POWER       = 1;
+/*
+const HOME_FREQUENCY   = 50;
+const HOME_FALLOFF     = 20;
+*/
 const FOOP_DISTANCE_SQUARED = 100 ** 2;
-const FOOP_POWER       = 1
+const FOOP_POWER       = 1;
 const MAX_VELOCITY     = 5;
-const MAX_ACCELERATION = 0.1;
+const MAX_ACCELERATION = 5.1;
 const LINE_MULTIPLIER = 10;
 const TRAIL = 0.8;
 
@@ -78,15 +82,19 @@ class Ant {
         this.y += this.vy;
 
         if (this.x < 0) {
-            this.x += this.config.width;
+            this.x = 0;
+            this.vx *= -1;
         } else if (this.x > this.config.width) {
-            this.x = this.config.width - this.x;
+            this.x = this.config.width;
+            this.vx *= -1;
         }
 
         if (this.y < 0) {
-            this.y += this.config.height;
+            this.y = 0;
+            this.vy *= -1;
         } else if (this.y > this.config.height) {
-            this.y = this.config.height - this.y;
+            this.y = this.config.height;
+            this.vy *= -1;
         }
 
         this.ax = 0;
@@ -94,7 +102,7 @@ class Ant {
     }
 
     scout() {
-        if (this.timer === 100) {
+        if (this.timer === this.config.homeFrequency) {
             this.board.createPheronome(this.x, this.y, "HOME");
             this.timer = 0;
         } else {
@@ -126,11 +134,18 @@ class Ant {
 
     home() {
         if (this.homePheromones.length === 0) return;
+
+        let oldest = this.homePheromones[0];
+        let x;
+        let y;
+
+        for (const pheromone of this.homePheromones) oldest = pheromone.age > oldest ? pheromone : oldest;
+        /*
         let sumX = 0;
         let sumY = 0;
         let oldest = 1;
-        let x = 0;
-        let y = 0;
+        let x;
+        let y;
 
         for (const pheromone of this.homePheromones) oldest = pheromone.age > oldest ? pheromone.age : oldest;
         for (const pheromone of this.homePheromones) {
@@ -138,11 +153,17 @@ class Ant {
                 pheromone.x - this.x,
                 pheromone.y - this.y
             ));
-            sumX += x * (pheromone.age / oldest);
-            sumY += y * (pheromone.age / oldest);
+            sumX += x * (pheromone.age / oldest / this.config.homeFalloff);
+            sumY += y * (pheromone.age / oldest / this.config.homeFalloff);
         }
 
         ({ x, y } = normal(sumX, sumY));
+        */
+
+        ({ x, y } = normal(
+            oldest.x - this.x,
+            oldest.y - this.y
+        ));
         this.ax += x * this.config.homePower;
         this.ay += y * this.config.homePower;
     }
@@ -209,19 +230,19 @@ class Board {
             ant.foodPheromones = [];
             ant.food = [];
 
-            for (const pheromone in this.homePheromones) {
+            for (const pheromone of this.homePheromones) {
                 if (distanceSquared(ant, pheromone) < this.config.homeDistanceSquared) {
                     ant.homePheromones.push(pheromone);
                 }
             }
 
-            for (const pheromone in this.foodPheromones) {
+            for (const pheromone of this.foodPheromones) {
                 if (distanceSquared(ant, pheromone) < this.config.foopDistanceSquared) {
                     ant.foodPheromones.push(pheromone);
                 }
             }
 
-            for (const food in this.food) {
+            for (const food of this.food) {
                 if (distanceSquared(ant, food) < this.config.foodDistanceSquared) {
                     ant.food.push(food);
                 }
@@ -274,6 +295,12 @@ class Board {
 }
 
 const defaultConfig = {
+    homeDistanceSquared: HOME_DISTANCE_SQUARED,
+    homePower: HOME_POWER,
+    homeFrequency: HOME_FREQUENCY,
+    homeFalloff: HOME_FALLOFF,
+    foopDistanceSquared: FOOP_DISTANCE_SQUARED,
+    foopPower: FOOP_POWER,
     maxVelocity: MAX_VELOCITY,
     maxAcceleration: MAX_ACCELERATION,
     lineMultiplier: LINE_MULTIPLIER,
