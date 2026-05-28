@@ -1,14 +1,14 @@
 const ANTS = 1;
 const HOME_DISTANCE_SQUARED = 100 ** 2;
 const HOME_POWER       = 1;
+const HOME_FREQUENCY   = 10;
 /*
-const HOME_FREQUENCY   = 50;
 const HOME_FALLOFF     = 20;
 */
 const FOOP_DISTANCE_SQUARED = 100 ** 2;
 const FOOP_POWER       = 1;
 const MAX_VELOCITY     = 5;
-const MAX_ACCELERATION = 5.1;
+const MAX_ACCELERATION = 0.5;
 const LINE_MULTIPLIER = 10;
 const TRAIL = 0.8;
 
@@ -19,7 +19,7 @@ function addRangeListener(sliderID, config, defaultValue) {
     span.textContent = input.value;
     input.addEventListener("input", () => {
         // Specific use case for distances as they need to be squared
-        if (sliderID === "distance" | sliderID === "separationDistance") {
+        if (sliderID === "homeDistance") {
             config[sliderID + "Squared"] = Number(input.value) ** 2;
         } else {
             config[sliderID] = Number(input.value);
@@ -51,10 +51,11 @@ class Ant {
         this.config = config;
         this.board = board
         this.state = "SCOUT";
+        this.pheromoneTimer = 0;
         this.timer = 0;
         const angle = Math.random() * Math.PI * 2;
-        this.vx = Math.cos(angle) * this.config.maxAcceleration;
-        this.vy = Math.sin(angle) * this.config.maxAcceleration;
+        this.vx = Math.cos(angle) * this.config.maxVelocity;
+        this.vy = Math.sin(angle) * this.config.maxVelocity;
         this.ax = 0;
         this.ay = 0;
         this.homePheromones = [];
@@ -102,8 +103,15 @@ class Ant {
     }
 
     scout() {
-        if (this.timer === this.config.homeFrequency) {
+        if (this.pheromoneTimer === this.config.homeFrequency) {
             this.board.createPheronome(this.x, this.y, "HOME");
+            this.pheromoneTimer = 0;
+        } else {
+            this.pheromoneTimer++;
+        }
+
+        if (this.timer >= randomInclusiveInt(500, 2000)) {
+            this.state = "HOME";
             this.timer = 0;
         } else {
             this.timer++;
@@ -111,35 +119,38 @@ class Ant {
 
         if (this.foodPheromones.length === 0) return;
 
-        let sumX = 0;
-        let sumY = 0;
-        let oldest = 1;
-        let x = 0;
-        let y = 0;
+        let oldest = this.foodPheromones[0];
+        let x;
+        let y;
 
-        for (const pheromone of this.foodPheromones) oldest = pheromone.age > oldest ? pheromone.age : oldest;
-        for (const pheromone of this.foodPheromones) {
-            ({ x, y } = normal(
-                pheromone.x - this.x,
-                pheromone.y - this.y
-            ));
-            sumX += x * (pheromone.age / oldest);
-            sumY += y * (pheromone.age / oldest);
-        }
+        for (const pheromone of this.foodPheromones) oldest = pheromone.age > oldest ? pheromone : oldest;
 
-        ({ x, y } = normal(sumX, sumY));
+        ({ x, y } = normal(
+            oldest.x - this.x,
+            oldest.y - this.y
+        ));
+
         this.ax += x * this.config.foopPower;
         this.ay += y * this.config.foopPower;
     }
 
     home() {
+        if (this.pheromoneTimer === this.config.homeFrequency) {
+            this.board.createPheronome(this.x, this.y, "FOOD");
+            this.pheromoneTimer = 0;
+        } else {
+            this.pheromoneTimer++;
+        }
+
+        if (this.timer >= randomInclusiveInt(200, 1000)) {
+            this.state = "SCOUT";
+            this.timer = 0;
+        } else {
+            this.timer++;
+        }
+
         if (this.homePheromones.length === 0) return;
 
-        let oldest = this.homePheromones[0];
-        let x;
-        let y;
-
-        for (const pheromone of this.homePheromones) oldest = pheromone.age > oldest ? pheromone : oldest;
         /*
         let sumX = 0;
         let sumY = 0;
@@ -160,10 +171,17 @@ class Ant {
         ({ x, y } = normal(sumX, sumY));
         */
 
+        let oldest = this.homePheromones[0];
+        let x;
+        let y;
+
+        for (const pheromone of this.homePheromones) oldest = pheromone.age > oldest ? pheromone : oldest;
+
         ({ x, y } = normal(
             oldest.x - this.x,
             oldest.y - this.y
         ));
+
         this.ax += x * this.config.homePower;
         this.ay += y * this.config.homePower;
     }
@@ -215,8 +233,8 @@ class Board {
         for (let i = 0; i < antsCount; i++) {
             this.ants.push(
                 new Ant(
-                    randomInclusiveInt(0, this.config.width),
-                    randomInclusiveInt(0, this.config.height),
+                    this.config.width / 5,
+                    this.config.height / 5,
                     this.config,
                     this
                 )
@@ -264,10 +282,16 @@ class Board {
             this.ctx.fillRect(pheromone.x - 5, pheromone.y - 5, 10, 10);
         }
 
-        this.ctx.fillStyle = "red";
-        this.ctx.strokeStyle = "blue";
         this.ctx.lineWidth = 2;
         for (const ant of this.ants) {
+            if (ant.state === "SCOUT") {
+                this.ctx.fillStyle = "red";
+                this.ctx.strokeStyle = "blue";
+            } else {
+                this.ctx.fillStyle = "blue";
+                this.ctx.strokeStyle = "red";
+            }
+
             this.ctx.fillRect(ant.x - 5, ant.y - 5, 10, 10);
             this.ctx.beginPath();
             this.ctx.moveTo(ant.x, ant.y);
@@ -278,10 +302,15 @@ class Board {
 
     update() {
         this.updateSurroundings();
+
         for (const ant of this.ants) ant.update();
         for (const ant of this.ants) ant.move(this.config.width, this.config.height);
         for (const pheromone of this.homePheromones) pheromone.update();
         for (const pheromone of this.foodPheromones) pheromone.update();
+
+        this.homePheromones = this.homePheromones.filter((pheromone) => pheromone.age <= 500);
+        this.foodPheromones = this.foodPheromones.filter((pheromone) => pheromone.age <= 100);
+
         this.draw();
     }
 
@@ -298,7 +327,9 @@ const defaultConfig = {
     homeDistanceSquared: HOME_DISTANCE_SQUARED,
     homePower: HOME_POWER,
     homeFrequency: HOME_FREQUENCY,
+    /*
     homeFalloff: HOME_FALLOFF,
+    */
     foopDistanceSquared: FOOP_DISTANCE_SQUARED,
     foopPower: FOOP_POWER,
     maxVelocity: MAX_VELOCITY,
@@ -308,6 +339,7 @@ const defaultConfig = {
 }
 let board = new Board("canvas", ANTS, defaultConfig);
 
+addRangeListener("homeDistance", defaultConfig, Math.sqrt(HOME_DISTANCE_SQUARED));
 addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
 addRangeListener("maxAcceleration", defaultConfig, MAX_ACCELERATION);
 addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
