@@ -8,6 +8,22 @@ const MAX_ACCELERATION = 0.1;
 const LINE_MULTIPLIER = 10;
 const TRAIL = 0.8;
 
+function addRangeListener(sliderID, config, defaultValue) {
+    const input = document.getElementById(sliderID);
+    const span = document.getElementById(sliderID + "Value");
+    input.value = defaultValue;
+    span.textContent = input.value;
+    input.addEventListener("input", () => {
+        // Specific use case for distances as they need to be squared
+        if (sliderID === "distance" | sliderID === "separationDistance") {
+            config[sliderID + "Squared"] = Number(input.value) ** 2;
+        } else {
+            config[sliderID] = Number(input.value);
+        }
+        span.textContent = input.value;
+    });
+}
+
 function distanceSquared(u, v) {
     const dx = u.x - v.x;
     const dy = u.y - v.y;
@@ -264,6 +280,11 @@ const defaultConfig = {
     trail: TRAIL
 }
 let board = new Board("canvas", ANTS, defaultConfig);
+
+addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
+addRangeListener("maxAcceleration", defaultConfig, MAX_ACCELERATION);
+addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
+addRangeListener("trail", defaultConfig, TRAIL);
 
 let running = true;
 
