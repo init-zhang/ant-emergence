@@ -25,11 +25,13 @@ function randomInclusiveInt(min, max) {
 }
 
 class Ant {
-    constructor(x, y, config) {
+    constructor(x, y, config, board) {
         this.x = x;
         this.y = y;
         this.config = config;
+        this.board = board
         this.state = "SCOUT";
+        this.timer = 0;
         const angle = Math.random() * Math.PI * 2;
         this.vx = Math.cos(angle) * this.config.maxAcceleration;
         this.vy = Math.sin(angle) * this.config.maxAcceleration;
@@ -76,7 +78,15 @@ class Ant {
     }
 
     scout() {
+        if (this.timer === 100) {
+            this.board.createPheronome(this.x, this.y, "HOME");
+            this.timer = 0;
+        } else {
+            this.timer++;
+        }
+
         if (this.foodPheromones.length === 0) return;
+
         let sumX = 0;
         let sumY = 0;
         let oldest = 1;
@@ -120,12 +130,25 @@ class Ant {
         this.ax += x * this.config.homePower;
         this.ay += y * this.config.homePower;
     }
+
     update() {
         if (this.state == "SCOUT") {
             this.scout();
         } else if (this.state == "HOME") {
             this.home();
         }
+    }
+}
+
+class Pheromone {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.age = 0;
+    }
+
+    update() {
+        this.age += 1;
     }
 }
 
@@ -157,7 +180,8 @@ class Board {
                 new Ant(
                     randomInclusiveInt(0, this.config.width),
                     randomInclusiveInt(0, this.config.height),
-                    this.config
+                    this.config,
+                    this
                 )
             );
         }
@@ -169,19 +193,19 @@ class Board {
             ant.foodPheromones = [];
             ant.food = [];
 
-            for (pheromone in this.homePheromones) {
+            for (const pheromone in this.homePheromones) {
                 if (distanceSquared(ant, pheromone) < this.config.homeDistanceSquared) {
                     ant.homePheromones.push(pheromone);
                 }
             }
 
-            for (pheromone in this.foodPheromones) {
+            for (const pheromone in this.foodPheromones) {
                 if (distanceSquared(ant, pheromone) < this.config.foopDistanceSquared) {
                     ant.foodPheromones.push(pheromone);
                 }
             }
 
-            for (food in this.food) {
+            for (const food in this.food) {
                 if (distanceSquared(ant, food) < this.config.foodDistanceSquared) {
                     ant.food.push(food);
                 }
@@ -193,14 +217,14 @@ class Board {
         this.ctx.fillStyle = `rgba(255,255,255,${1-this.config.trail})`;
         this.ctx.fillRect(0, 0, this.config.width, this.config.height);
 
-        this.ctx.fillStyle = "";
-        for (const pheromones of this.homePheromones) {
-            this.ctx.fillRect(ant.x - 5, ant.y - 5, 10, 10);
+        this.ctx.fillStyle = "green";
+        for (const pheromone of this.homePheromones) {
+            this.ctx.fillRect(pheromone.x - 5, pheromone.y - 5, 10, 10);
         }
 
-        this.ctx.fillStyle = "";
-        for (const pheromones of this.homePheromones) {
-            this.ctx.fillRect(ant.x - 5, ant.y - 5, 10, 10);
+        this.ctx.fillStyle = "magenta";
+        for (const pheromone of this.foodPheromones) {
+            this.ctx.fillRect(pheromone.x - 5, pheromone.y - 5, 10, 10);
         }
 
         this.ctx.fillStyle = "red";
@@ -216,10 +240,20 @@ class Board {
     }
 
     update() {
-        this.updateNeighbours();
+        this.updateSurroundings();
         for (const ant of this.ants) ant.update();
         for (const ant of this.ants) ant.move(this.config.width, this.config.height);
+        for (const pheromone of this.homePheromones) pheromone.update();
+        for (const pheromone of this.foodPheromones) pheromone.update();
         this.draw();
+    }
+
+    createPheronome(x, y, type) {
+        if (type == "HOME") {
+            this.homePheromones.push(new Pheromone(x, y));
+        } else if (type == "FOOD") {
+            this.foodPheromones.push(new Pheromone(x, y));
+        }
     }
 }
 
