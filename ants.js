@@ -409,8 +409,30 @@ document.getElementById("restart").addEventListener("click", () => {
     board = new Board("canvas", ants, defaultConfig);
 });
 
-function updateLoop() {
+const performanceSpan = document.getElementById("performance");
+let updateStart;
+let udpateTime;
+let frameCount = 0;
+let lastTime = performance.now();
+let now;
+let fps = 0;
+
+function loop() {
+    updateStart = performance.now();
     board.update();
-    if (running) requestAnimationFrame(() => updateLoop());
+    updateTime = performance.now() - updateStart;
+
+    frameCount++;
+    now = performance.now();
+    if (now - lastTime >= 1000) {
+        fps = frameCount;
+        frameCount = 0;
+        lastTime = now;
+    }
+
+    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime}ms`;
+
+    requestAnimationFrame(loop);
 }
-updateLoop();
+
+loop();
