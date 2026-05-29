@@ -5,8 +5,10 @@ const HOME_PHEROMONE_FREQUENCY   = 10;
 const HOME_PHEROMONE_LIFESPAN    = 800;
 const FOOD_PHEROMONE_DISTANCE_SQUARED = 100 ** 2;
 const FOOD_PHEROMONE_POWER       = 1;
-const FOOD_PHEROMONE_FREQUENCY   = 20;
+const FOOD_PHEROMONE_FREQUENCY   = 50;
 const FOOD_PHEROMONE_LIFESPAN    = 200;
+const ANT_DISTANCE_SQUARED       = 20 ** 2;
+const ANT_POWER                  = 1;
 const MAX_VELOCITY     = 5;
 const MAX_ACCELERATION = 0.5;
 const LINE_MULTIPLIER = 10;
@@ -60,6 +62,7 @@ class Ant {
         this.ay = 0;
         this.homePheromones = [];
         this.foodPheromones = [];
+        this.ants = [];
         this.food = [];
     }
 
@@ -166,12 +169,35 @@ class Ant {
         this.ay += y * this.config.homePheromonePower;
     }
 
+    avoidAnts() {
+        if (this.ants.length === 0) return;
+
+        let sumX = 0;
+        let sumY = 0;
+        let x;
+        let y;
+
+        for (const ant of this.ants) {
+            sumX += ant.x;
+            sumY += ant.y;
+        }
+
+        ({ x, y } = normal(
+            this.x - sumX / this.ants.length,
+            this.y - sumY / this.ants.length,
+        ))
+
+        this.ax += x * this.config.antPower;
+        this.ay += y * this.config.antPower;
+    }
+
     update() {
         if (this.state === "SCOUT") {
             this.scout();
         } else if (this.state === "HOME") {
             this.home();
         }
+        this.avoidAnts();
     }
 }
 
@@ -223,6 +249,8 @@ class Board {
     }
 
     updateSurroundings() {
+        for (const ant of this.ants) ant.ants.length = 0;
+
         for (const ant of this.ants) {
             ant.homePheromones.length = 0;
             ant.foodPheromones.length = 0;
@@ -237,6 +265,13 @@ class Board {
             for (const pheromone of this.foodPheromones) {
                 if (distanceSquared(ant, pheromone) < this.config.foodPheromoneDistanceSquared) {
                     ant.foodPheromones.push(pheromone);
+                }
+            }
+
+            for (const otherAnt of this.ants) {
+                if (distanceSquared(ant, otherAnt) < this.config.antDistanceSquared) {
+                    ant.ants.push(otherAnt);
+                    otherAnt.ants.push(ant);
                 }
             }
 
@@ -319,6 +354,8 @@ const defaultConfig = {
     foodPheromonePower: FOOD_PHEROMONE_POWER,
     foodPheromoneFrequency: FOOD_PHEROMONE_FREQUENCY,
     foodPheromoneLifespan: FOOD_PHEROMONE_LIFESPAN,
+    antDistanceSquared: ANT_DISTANCE_SQUARED,
+    antPower: ANT_POWER,
     maxVelocity: MAX_VELOCITY,
     maxAcceleration: MAX_ACCELERATION,
     lineMultiplier: LINE_MULTIPLIER,
