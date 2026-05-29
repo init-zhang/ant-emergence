@@ -1,10 +1,12 @@
 const ANTS = 1;
-const HOME_DISTANCE_SQUARED = 100 ** 2;
-const HOME_POWER       = 1;
-const HOME_FREQUENCY   = 10;
-const FOOP_DISTANCE_SQUARED = 100 ** 2;
-const FOOP_POWER       = 1;
-const FOOP_FREQUENCY   = 100000000;
+const HOME_PHEROMONE_DISTANCE_SQUARED = 100 ** 2;
+const HOME_PHEROMONE_POWER       = 1;
+const HOME_PHEROMONE_FREQUENCY   = 10;
+const HOME_PHEROMONE_LIFESPAN    = 800;
+const FOOD_PHEROMONE_DISTANCE_SQUARED = 100 ** 2;
+const FOOD_PHEROMONE_POWER       = 1;
+const FOOD_PHEROMONE_FREQUENCY   = 20;
+const FOOD_PHEROMONE_LIFESPAN    = 200;
 const MAX_VELOCITY     = 5;
 const MAX_ACCELERATION = 0.5;
 const LINE_MULTIPLIER = 10;
@@ -17,7 +19,7 @@ function addRangeListener(sliderID, config, defaultValue) {
     span.textContent = input.value;
     input.addEventListener("input", () => {
         // Specific use case for distances as they need to be squared
-        if (sliderID === "homeDistance") {
+        if (sliderID === "homePheromoneDistance") {
             config[sliderID + "Squared"] = Number(input.value) ** 2;
         } else {
             config[sliderID] = Number(input.value);
@@ -101,14 +103,14 @@ class Ant {
     }
 
     scout() {
-        if (this.pheromoneTimer >= this.config.homeFrequency) {
+        if (this.pheromoneTimer >= this.config.homePheromoneFrequency) {
             this.board.createPheronome(this.x, this.y, "HOME");
             this.pheromoneTimer = 0;
         } else {
             this.pheromoneTimer++;
         }
 
-        if (this.timer >= randomInclusiveInt(500, 1000)) {
+        if (this.timer >= 400) {
             this.state = "HOME";
             this.timer = 0;
         } else {
@@ -128,12 +130,12 @@ class Ant {
             oldest.y - this.y
         ));
 
-        this.ax += x * this.config.foopPower;
-        this.ay += y * this.config.foopPower;
+        this.ax += x * this.config.foodPheromonePower;
+        this.ay += y * this.config.foodPheromonePower;
     }
 
     home() {
-        if (this.pheromoneTimer >= this.config.foopFrequency) {
+        if (this.pheromoneTimer >= this.config.foodPheromoneFrequency) {
             this.board.createPheronome(this.x, this.y, "FOOD");
             this.pheromoneTimer = 0;
         } else {
@@ -142,7 +144,7 @@ class Ant {
 
         if (distanceSquared(this, {
             x: this.config.width / 5, y: this.config.height / 5
-        }) < this.config.homeDistanceSquared) {
+        }) < this.config.homePheromoneDistanceSquared) {
             this.state = "SCOUT";
             this.timer = 0;
         }
@@ -160,8 +162,8 @@ class Ant {
             oldest.y - this.y
         ));
 
-        this.ax += x * this.config.homePower;
-        this.ay += y * this.config.homePower;
+        this.ax += x * this.config.homePheromonePower;
+        this.ay += y * this.config.homePheromonePower;
     }
 
     update() {
@@ -227,13 +229,13 @@ class Board {
             ant.food.length = 0;
 
             for (const pheromone of this.homePheromones) {
-                if (distanceSquared(ant, pheromone) < this.config.homeDistanceSquared) {
+                if (distanceSquared(ant, pheromone) < this.config.homePheromoneDistanceSquared) {
                     ant.homePheromones.push(pheromone);
                 }
             }
 
             for (const pheromone of this.foodPheromones) {
-                if (distanceSquared(ant, pheromone) < this.config.foopDistanceSquared) {
+                if (distanceSquared(ant, pheromone) < this.config.foodPheromoneDistanceSquared) {
                     ant.foodPheromones.push(pheromone);
                 }
             }
@@ -289,11 +291,11 @@ class Board {
 
         this.homePheromones = this.homePheromones.filter(p => {
             p.update();
-            return p.age <= 800;
+            return p.age <= this.config.homePheromoneLifespan;
         });
         this.foodPheromones = this.foodPheromones.filter(p => {
             p.update();
-            return p.age <= 200;
+            return p.age <= this.config.foodPheromoneLifespan;
         });
 
         this.draw();
@@ -309,12 +311,14 @@ class Board {
 }
 
 const defaultConfig = {
-    homeDistanceSquared: HOME_DISTANCE_SQUARED,
-    homePower: HOME_POWER,
-    homeFrequency: HOME_FREQUENCY,
-    foopDistanceSquared: FOOP_DISTANCE_SQUARED,
-    foopPower: FOOP_POWER,
-    foopFrequency: FOOP_FREQUENCY,
+    homePheromoneDistanceSquared: HOME_PHEROMONE_DISTANCE_SQUARED,
+    homePheromonePower: HOME_PHEROMONE_POWER,
+    homePheromoneFrequency: HOME_PHEROMONE_FREQUENCY,
+    homePheromoneLifespan: HOME_PHEROMONE_LIFESPAN,
+    foodPheromoneDistanceSquared: FOOD_PHEROMONE_DISTANCE_SQUARED,
+    foodPheromonePower: FOOD_PHEROMONE_POWER,
+    foodPheromoneFrequency: FOOD_PHEROMONE_FREQUENCY,
+    foodPheromoneLifespan: FOOD_PHEROMONE_LIFESPAN,
     maxVelocity: MAX_VELOCITY,
     maxAcceleration: MAX_ACCELERATION,
     lineMultiplier: LINE_MULTIPLIER,
@@ -322,7 +326,7 @@ const defaultConfig = {
 }
 let board = new Board("canvas", ANTS, defaultConfig);
 
-addRangeListener("homeDistance", defaultConfig, Math.sqrt(HOME_DISTANCE_SQUARED));
+// addRangeListener("homePheromoneDistance", defaultConfig, Math.sqrt(HOME_PHEROMONE_DISTANCE_SQUARED));
 addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
 addRangeListener("maxAcceleration", defaultConfig, MAX_ACCELERATION);
 addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
