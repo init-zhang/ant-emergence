@@ -5,8 +5,8 @@ const HOME_PHEROMONE_FREQUENCY   = 10;
 const HOME_PHEROMONE_LIFESPAN    = 800;
 const FOOD_PHEROMONE_DISTANCE_SQUARED = 100 ** 2;
 const FOOD_PHEROMONE_POWER       = 1;
-const FOOD_PHEROMONE_FREQUENCY   = 50;
-const FOOD_PHEROMONE_LIFESPAN    = 200;
+const FOOD_PHEROMONE_FREQUENCY   = 10;
+const FOOD_PHEROMONE_LIFESPAN    = 400;
 const ANT_DISTANCE_SQUARED       = 20 ** 2;
 const ANT_POWER                  = 1;
 const MAX_VELOCITY     = 5;
@@ -120,6 +120,14 @@ class Ant {
             this.timer++;
         }
 
+        if (distanceSquared(this, {
+            x: this.config.width / 5 * 4, y: this.config.height / 5 * 4
+        }) < 1600) {
+            this.state = "FOOD";
+            this.timer = 0;
+            this.pheromoneTimer = this.config.foodPheromoneFrequency;
+        }
+
         if (this.foodPheromones.length === 0) return;
 
         let oldest = this.foodPheromones[0];
@@ -138,16 +146,18 @@ class Ant {
     }
 
     home() {
-        if (this.pheromoneTimer >= this.config.foodPheromoneFrequency) {
-            this.board.createPheronome(this.x, this.y, "FOOD");
-            this.pheromoneTimer = 0;
-        } else {
-            this.pheromoneTimer++;
+        if (this.state === "FOOD") {
+            if (this.pheromoneTimer >= this.config.foodPheromoneFrequency) {
+                this.board.createPheronome(this.x, this.y, "FOOD");
+                this.pheromoneTimer = 0;
+            } else {
+                this.pheromoneTimer++;
+            }
         }
 
         if (distanceSquared(this, {
             x: this.config.width / 5, y: this.config.height / 5
-        }) < this.config.homePheromoneDistanceSquared) {
+        }) < 1600) {
             this.state = "SCOUT";
             this.timer = 0;
         }
@@ -194,7 +204,7 @@ class Ant {
     update() {
         if (this.state === "SCOUT") {
             this.scout();
-        } else if (this.state === "HOME") {
+        } else if (this.state === "HOME" || this.state === "FOOD") {
             this.home();
         }
         this.avoidAnts();
@@ -290,6 +300,9 @@ class Board {
         this.ctx.fillStyle = "black";
         this.ctx.fillRect(this.config.width / 5 - 20, this.config.height / 5 - 20, 40, 40);
 
+        this.ctx.fillStyle = "pink";
+        this.ctx.fillRect(this.config.width / 5 * 4 - 20, this.config.height / 5 * 4 - 20, 40, 40);
+
         this.ctx.fillStyle = "green";
         for (const pheromone of this.homePheromones) {
             this.ctx.fillRect(pheromone.x - 2, pheromone.y - 2, 4, 4);
@@ -305,9 +318,12 @@ class Board {
             if (ant.state === "SCOUT") {
                 this.ctx.fillStyle = "red";
                 this.ctx.strokeStyle = "blue";
-            } else {
+            } else if (ant.state === "HOME") {
                 this.ctx.fillStyle = "blue";
                 this.ctx.strokeStyle = "red";
+            } else if (ant.state === "FOOD") {
+                this.ctx.fillStyle = "pink";
+                this.ctx.strokeStyle = "blue";
             }
 
             this.ctx.fillRect(ant.x - 5, ant.y - 5, 10, 10);
