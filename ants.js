@@ -2,9 +2,6 @@ const ANTS = 1;
 const HOME_DISTANCE_SQUARED = 100 ** 2;
 const HOME_POWER       = 1;
 const HOME_FREQUENCY   = 10;
-/*
-const HOME_FALLOFF     = 20;
-*/
 const FOOP_DISTANCE_SQUARED = 100 ** 2;
 const FOOP_POWER       = 1;
 const FOOP_FREQUENCY   = 100000000;
@@ -124,7 +121,7 @@ class Ant {
         let x;
         let y;
 
-        for (const pheromone of this.foodPheromones) oldest = pheromone.age > oldest ? pheromone : oldest;
+        for (const pheromone of this.foodPheromones) oldest = pheromone.age > oldest.age ? pheromone : oldest;
 
         ({ x, y } = normal(
             oldest.x - this.x,
@@ -152,31 +149,11 @@ class Ant {
 
         if (this.homePheromones.length === 0) return;
 
-        /*
-        let sumX = 0;
-        let sumY = 0;
-        let oldest = 1;
-        let x;
-        let y;
-
-        for (const pheromone of this.homePheromones) oldest = pheromone.age > oldest ? pheromone.age : oldest;
-        for (const pheromone of this.homePheromones) {
-            ({ x, y } = normal(
-                pheromone.x - this.x,
-                pheromone.y - this.y
-            ));
-            sumX += x * (pheromone.age / oldest / this.config.homeFalloff);
-            sumY += y * (pheromone.age / oldest / this.config.homeFalloff);
-        }
-
-        ({ x, y } = normal(sumX, sumY));
-        */
-
         let oldest = this.homePheromones[0];
         let x;
         let y;
 
-        for (const pheromone of this.homePheromones) oldest = pheromone.age > oldest ? pheromone : oldest;
+        for (const pheromone of this.homePheromones) oldest = pheromone.age > oldest.age ? pheromone : oldest;
 
         ({ x, y } = normal(
             oldest.x - this.x,
@@ -188,9 +165,9 @@ class Ant {
     }
 
     update() {
-        if (this.state == "SCOUT") {
+        if (this.state === "SCOUT") {
             this.scout();
-        } else if (this.state == "HOME") {
+        } else if (this.state === "HOME") {
             this.home();
         }
     }
@@ -245,9 +222,9 @@ class Board {
 
     updateSurroundings() {
         for (const ant of this.ants) {
-            ant.homePheromones = [];
-            ant.foodPheromones = [];
-            ant.food = [];
+            ant.homePheromones.length = 0;
+            ant.foodPheromones.length = 0;
+            ant.food.length = 0;
 
             for (const pheromone of this.homePheromones) {
                 if (distanceSquared(ant, pheromone) < this.config.homeDistanceSquared) {
@@ -278,12 +255,12 @@ class Board {
 
         this.ctx.fillStyle = "green";
         for (const pheromone of this.homePheromones) {
-            this.ctx.fillRect(pheromone.x - 5, pheromone.y - 5, 10, 10);
+            this.ctx.fillRect(pheromone.x - 2, pheromone.y - 2, 4, 4);
         }
 
         this.ctx.fillStyle = "magenta";
         for (const pheromone of this.foodPheromones) {
-            this.ctx.fillRect(pheromone.x - 5, pheromone.y - 5, 10, 10);
+            this.ctx.fillRect(pheromone.x - 2, pheromone.y - 2, 4, 4);
         }
 
         this.ctx.lineWidth = 2;
@@ -309,19 +286,23 @@ class Board {
 
         for (const ant of this.ants) ant.update();
         for (const ant of this.ants) ant.move(this.config.width, this.config.height);
-        for (const pheromone of this.homePheromones) pheromone.update();
-        for (const pheromone of this.foodPheromones) pheromone.update();
 
-        this.homePheromones = this.homePheromones.filter((pheromone) => pheromone.age <= 800);
-        this.foodPheromones = this.foodPheromones.filter((pheromone) => pheromone.age <= 200);
+        this.homePheromones = this.homePheromones.filter(p => {
+            p.update();
+            return p.age <= 800;
+        });
+        this.foodPheromones = this.foodPheromones.filter(p => {
+            p.update();
+            return p.age <= 200;
+        });
 
         this.draw();
     }
 
     createPheronome(x, y, type) {
-        if (type == "HOME") {
+        if (type === "HOME") {
             this.homePheromones.push(new Pheromone(x, y));
-        } else if (type == "FOOD") {
+        } else if (type === "FOOD") {
             this.foodPheromones.push(new Pheromone(x, y));
         }
     }
@@ -331,9 +312,6 @@ const defaultConfig = {
     homeDistanceSquared: HOME_DISTANCE_SQUARED,
     homePower: HOME_POWER,
     homeFrequency: HOME_FREQUENCY,
-    /*
-    homeFalloff: HOME_FALLOFF,
-    */
     foopDistanceSquared: FOOP_DISTANCE_SQUARED,
     foopPower: FOOP_POWER,
     foopFrequency: FOOP_FREQUENCY,
