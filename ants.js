@@ -1,18 +1,18 @@
 const ANTS = 1;
-const HOME_PHEROMONE_DISTANCE_SQUARED = 100 ** 2;
+const HOME_PHEROMONE_DISTANCE_SQUARED = 40 ** 2;
 const HOME_PHEROMONE_POWER       = 1;
 const HOME_PHEROMONE_FREQUENCY   = 10;
 const HOME_PHEROMONE_LIFESPAN    = 800;
-const FOOD_PHEROMONE_DISTANCE_SQUARED = 100 ** 2;
+const FOOD_PHEROMONE_DISTANCE_SQUARED = 40 ** 2;
 const FOOD_PHEROMONE_POWER       = 1;
 const FOOD_PHEROMONE_FREQUENCY   = 10;
-const FOOD_PHEROMONE_LIFESPAN    = 400;
+const FOOD_PHEROMONE_LIFESPAN    = 1600;
 const ANT_DISTANCE_SQUARED       = 20 ** 2;
 const ANT_POWER                  = 1;
-const MAX_VELOCITY     = 5;
-const MAX_ACCELERATION = 0.5;
-const LINE_MULTIPLIER = 10;
-const TRAIL = 0.8;
+const MAX_VELOCITY     = 3;
+const MAX_ACCELERATION = 0.3;
+const LINE_MULTIPLIER = 5;
+const TRAIL = 0.4;
 
 function addRangeListener(sliderID, config, defaultValue) {
     const input = document.getElementById(sliderID);
@@ -160,6 +160,7 @@ class Ant {
         }) < 1600) {
             this.state = "SCOUT";
             this.timer = 0;
+            this.pheromoneTimer = this.config.homePheromoneFrequency;
         }
 
         if (this.homePheromones.length === 0) return;
@@ -226,7 +227,7 @@ class Pheromone {
 class Board {
     constructor(canvasId, antsCount, config) {
         this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext("2d");
+        this.ctx = this.canvas.getContext("2d", { alpha: false });
         this.config = config;
         this.ants = [];
         this.homePheromones = [];
@@ -303,17 +304,19 @@ class Board {
         this.ctx.fillStyle = "pink";
         this.ctx.fillRect(this.config.width / 5 * 4 - 20, this.config.height / 5 * 4 - 20, 40, 40);
 
+        /*
         this.ctx.fillStyle = "green";
         for (const pheromone of this.homePheromones) {
-            this.ctx.fillRect(pheromone.x - 2, pheromone.y - 2, 4, 4);
+            this.ctx.fillRect(pheromone.x, pheromone.y, 1, 1);
         }
 
         this.ctx.fillStyle = "magenta";
         for (const pheromone of this.foodPheromones) {
-            this.ctx.fillRect(pheromone.x - 2, pheromone.y - 2, 4, 4);
+            this.ctx.fillRect(pheromone.x, pheromone.y, 1, 1);
         }
+        */
 
-        this.ctx.lineWidth = 2;
+        this.ctx.lineWidth = 1;
         for (const ant of this.ants) {
             if (ant.state === "SCOUT") {
                 this.ctx.fillStyle = "red";
@@ -326,7 +329,7 @@ class Board {
                 this.ctx.strokeStyle = "blue";
             }
 
-            this.ctx.fillRect(ant.x - 5, ant.y - 5, 10, 10);
+            this.ctx.fillRect(ant.x - 2, ant.y - 2, 4, 4);
             this.ctx.beginPath();
             this.ctx.moveTo(ant.x, ant.y);
             this.ctx.lineTo(ant.x + ant.vx * this.config.lineMultiplier, ant.y + ant.vy * this.config.lineMultiplier);
