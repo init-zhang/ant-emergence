@@ -67,6 +67,10 @@ class Ant {
     }
 
     move() {
+        if (this.ax === 0 && this.ay === 0) {
+            this.ax = this.vx;
+            this.ay = this.vy;
+        }
         const accMagnitude = Math.sqrt(this.ax * this.ax + this.ay * this.ay);
         if (accMagnitude > this.config.maxAcceleration) {
             this.ax = (this.ax / accMagnitude) * this.config.maxAcceleration;
