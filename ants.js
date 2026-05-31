@@ -53,8 +53,10 @@ class Ant {
         this.config = config;
         this.board = board
         this.state = "SCOUT";
-        this.pheromoneTimer = 0;
+        this.pheromoneTimer = this.config.homePheromoneFrequency;
         this.timer = 0;
+        this.px = -1;
+        this.py = -1;
         const angle = Math.random() * Math.PI * 2;
         this.vx = Math.cos(angle) * this.config.maxVelocity;
         this.vy = Math.sin(angle) * this.config.maxVelocity;
@@ -111,8 +113,10 @@ class Ant {
 
     scout() {
         if (this.pheromoneTimer >= this.config.homePheromoneFrequency) {
-            this.board.createPheronome(this.x, this.y, "HOME");
+            this.board.createPheronome(this.x, this.y, this.px, this.py, "HOME");
             this.pheromoneTimer = 0;
+            this.px = this.x;
+            this.py = this.y;
         } else {
             this.pheromoneTimer++;
         }
@@ -130,6 +134,8 @@ class Ant {
             this.state = "FOOD";
             this.timer = 0;
             this.pheromoneTimer = this.config.foodPheromoneFrequency;
+            this.px = -1;
+            this.py = -1;
         }
 
         if (this.foodPheromones.length === 0) return;
@@ -152,8 +158,10 @@ class Ant {
     home() {
         if (this.state === "FOOD") {
             if (this.pheromoneTimer >= this.config.foodPheromoneFrequency) {
-                this.board.createPheronome(this.x, this.y, "FOOD");
+                this.board.createPheronome(this.x, this.y, this.px, this.py, "FOOD");
                 this.pheromoneTimer = 0;
+                this.px = this.x;
+                this.py = this.y;
             } else {
                 this.pheromoneTimer++;
             }
@@ -165,6 +173,8 @@ class Ant {
             this.state = "SCOUT";
             this.timer = 0;
             this.pheromoneTimer = this.config.homePheromoneFrequency;
+            this.px = -1;
+            this.py = -1;
         }
 
         if (this.homePheromones.length === 0) return;
@@ -217,9 +227,11 @@ class Ant {
 }
 
 class Pheromone {
-    constructor(x, y) {
+    constructor(x, y, px, py) {
         this.x = x;
         this.y = y;
+        this.px = px;
+        this.py = py;
         this.age = 0;
     }
 
@@ -308,19 +320,26 @@ class Board {
         this.ctx.fillStyle = "pink";
         this.ctx.fillRect(this.config.width / 5 * 4 - 20, this.config.height / 5 * 4 - 20, 40, 40);
 
-        /*
-        this.ctx.fillStyle = "green";
-        for (const pheromone of this.homePheromones) {
-            this.ctx.fillRect(pheromone.x, pheromone.y, 1, 1);
-        }
-
-        this.ctx.fillStyle = "magenta";
-        for (const pheromone of this.foodPheromones) {
-            this.ctx.fillRect(pheromone.x, pheromone.y, 1, 1);
-        }
-        */
-
         this.ctx.lineWidth = 1;
+
+        if (this.config.showTrail) {
+            this.ctx.strokeStyle = "green";
+            for (const pheromone of this.homePheromones) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(pheromone.x, pheromone.y);
+                this.ctx.lineTo(pheromone.px, pheromone.py);
+                this.ctx.stroke();
+            }
+
+            this.ctx.strokeStyle = "magenta";
+            for (const pheromone of this.foodPheromones) {
+                this.ctx.beginPath();
+                this.ctx.moveTo(pheromone.x, pheromone.y);
+                this.ctx.lineTo(pheromone.px, pheromone.py);
+                this.ctx.stroke();
+            }
+        }
+
         for (const ant of this.ants) {
             if (ant.state === "SCOUT") {
                 this.ctx.fillStyle = "red";
@@ -359,11 +378,15 @@ class Board {
         this.draw();
     }
 
-    createPheronome(x, y, type) {
+    createPheronome(x, y, px, py, type) {
+        if (px === -1) {
+            px = x;
+            py = y;
+        }
         if (type === "HOME") {
-            this.homePheromones.push(new Pheromone(x, y));
+            this.homePheromones.push(new Pheromone(x, y, px, py));
         } else if (type === "FOOD") {
-            this.foodPheromones.push(new Pheromone(x, y));
+            this.foodPheromones.push(new Pheromone(x, y, px, py));
         }
     }
 }
@@ -382,7 +405,8 @@ const defaultConfig = {
     maxVelocity: MAX_VELOCITY,
     maxAcceleration: MAX_ACCELERATION,
     lineMultiplier: LINE_MULTIPLIER,
-    trail: TRAIL
+    trail: TRAIL,
+    showTrail: false
 }
 let board = new Board("canvas", ANTS, defaultConfig);
 
@@ -393,7 +417,6 @@ addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
 addRangeListener("trail", defaultConfig, TRAIL);
 
 let running = true;
-
 const toggleButton = document.getElementById("toggle");
 toggleButton.addEventListener("click", () => {
     if (running) {
@@ -408,13 +431,16 @@ toggleButton.addEventListener("click", () => {
 
 let ants = ANTS;
 const antsInput = document.getElementById("ants")
-antsInput.addEventListener("input", () => {
-    ants = antsInput.value;
-});
-
 document.getElementById("restart").addEventListener("click", () => {
+    ants = antsInput.value;
     board = new Board("canvas", ants, defaultConfig);
 });
+
+const toggleTrailCheckbox = document.getElementById("toggleTrail");
+toggleTrailCheckbox.addEventListener("click", () => {
+    defaultConfig.showTrail = toggleTrailCheckbox.checked;
+});
+toggleTrailCheckbox.dispatchEvent(new Event("click"));
 
 const performanceSpan = document.getElementById("performance");
 let updateStart;
