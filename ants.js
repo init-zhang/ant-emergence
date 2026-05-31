@@ -1,9 +1,9 @@
 const ANTS = 1;
-const HOME_PHEROMONE_DISTANCE_SQUARED = 40 ** 2;
+const HOME_PHEROMONE_DISTANCE_SQUARED = 200 ** 2;
 const HOME_PHEROMONE_POWER       = 1;
 const HOME_PHEROMONE_FREQUENCY   = 10;
 const HOME_PHEROMONE_LIFESPAN    = 800;
-const FOOD_PHEROMONE_DISTANCE_SQUARED = 40 ** 2;
+const FOOD_PHEROMONE_DISTANCE_SQUARED = 200 ** 2;
 const FOOD_PHEROMONE_POWER       = 1;
 const FOOD_PHEROMONE_FREQUENCY   = 10;
 const FOOD_PHEROMONE_LIFESPAN    = 1600;
@@ -21,7 +21,11 @@ function addRangeListener(sliderID, config, defaultValue) {
     span.textContent = input.value;
     input.addEventListener("input", () => {
         // Specific use case for distances as they need to be squared
-        if (sliderID === "homePheromoneDistance") {
+        if (
+            sliderID === "homePheromoneDistance" ||
+            sliderID === "foodPheromoneDistance" ||
+            sliderID === "antsDistance"
+        ) {
             config[sliderID + "Squared"] = Number(input.value) ** 2;
         } else {
             config[sliderID] = Number(input.value);
@@ -410,7 +414,16 @@ const defaultConfig = {
 }
 let board = new Board("canvas", ANTS, defaultConfig);
 
-// addRangeListener("homePheromoneDistance", defaultConfig, Math.sqrt(HOME_PHEROMONE_DISTANCE_SQUARED));
+addRangeListener("homePheromoneDistance", defaultConfig, Math.sqrt(HOME_PHEROMONE_DISTANCE_SQUARED));
+addRangeListener("homePheromonePower", defaultConfig, HOME_PHEROMONE_POWER);
+addRangeListener("homePheromoneFrequency", defaultConfig, HOME_PHEROMONE_FREQUENCY);
+addRangeListener("homePheromoneLifespan", defaultConfig, HOME_PHEROMONE_LIFESPAN);
+addRangeListener("foodPheromoneDistance", defaultConfig, Math.sqrt(FOOD_PHEROMONE_DISTANCE_SQUARED));
+addRangeListener("foodPheromonePower", defaultConfig, FOOD_PHEROMONE_POWER);
+addRangeListener("foodPheromoneFrequency", defaultConfig, FOOD_PHEROMONE_FREQUENCY);
+addRangeListener("foodPheromoneLifespan", defaultConfig, FOOD_PHEROMONE_LIFESPAN);
+addRangeListener("antDistance", defaultConfig, Math.sqrt(ANT_DISTANCE_SQUARED));
+addRangeListener("antPower", defaultConfig, ANT_POWER);
 addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
 addRangeListener("maxAcceleration", defaultConfig, MAX_ACCELERATION);
 addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
@@ -425,7 +438,7 @@ toggleButton.addEventListener("click", () => {
     } else {
         toggleButton.value = "Pause";
         running = true;
-        updateLoop();
+        loop();
     }
 });
 
@@ -465,7 +478,7 @@ function loop() {
 
     performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime}ms`;
 
-    requestAnimationFrame(loop);
+    if (running) requestAnimationFrame(loop);
 }
 
 loop();
