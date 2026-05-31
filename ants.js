@@ -255,6 +255,7 @@ class Board {
         this.food = [];
         this.resizeCanvas();
         this.initializeAnts(antsCount);
+        this.skipFrameTimer = this.config.skipFrames;
 
         window.addEventListener("resize", () => this.resizeCanvas());
     }
@@ -379,7 +380,12 @@ class Board {
             return p.age <= this.config.foodPheromoneLifespan;
         });
 
-        this.draw();
+        if (this.skipFrameTimer >= this.config.skipFrames) {
+            this.draw();
+            this.skipFrameTimer = 0;
+        } else {
+            this.skipFrameTimer++;
+        }
     }
 
     createPheronome(x, y, px, py, type) {
@@ -410,7 +416,8 @@ const defaultConfig = {
     maxAcceleration: MAX_ACCELERATION,
     lineMultiplier: LINE_MULTIPLIER,
     trail: TRAIL,
-    showTrail: false
+    showTrail: false,
+    skipFrames: 0
 }
 let board = new Board("canvas", ANTS, defaultConfig);
 
@@ -428,6 +435,7 @@ addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
 addRangeListener("maxAcceleration", defaultConfig, MAX_ACCELERATION);
 addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
 addRangeListener("trail", defaultConfig, TRAIL);
+addRangeListener("skipFrames", defaultConfig, 0);
 
 let running = true;
 const toggleButton = document.getElementById("toggle");
@@ -476,7 +484,7 @@ function loop() {
         lastTime = now;
     }
 
-    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime}ms`;
+    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime.toFixed(3)}ms`;
 
     if (running) requestAnimationFrame(loop);
 }
