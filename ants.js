@@ -40,12 +40,6 @@ function distanceSquared(u, v) {
     return dx * dx + dy * dy;
 }
 
-function normal(x, y) {
-    if (x === 0 && y === 0) return { x: 0, y: 0 };
-    const magnitude = Math.sqrt(x*x + y*y);
-    return { x: x / magnitude, y: y / magnitude };
-}
-
 function randomInclusiveInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -68,10 +62,9 @@ class Ant {
         this.rightHomePheromones = [];
         this.leftFoodPheromones = [];
         this.rightFoodPheromones = [];
-        this.ants = [];
         this.food = [];
 
-        this.state = "SCOUT";
+        this.state = "FIND_FOOD";
         this.pheromoneTimer = this.config.homePheromoneFrequency;
         this.timer = 0;
     }
@@ -92,10 +85,8 @@ class Ant {
             angleDifference += 2 * Math.PI;
         }
 
-        if (Math.abs(angleDifference) <= this.viewingAngleHalf) {
+        if (Math.abs(angleDifference) <= this.viewingAngleHalf)
             return angleDifference > 0 ? 1 : 2;
-        }
-
         return 0;
     }
 
@@ -123,7 +114,7 @@ class Ant {
         }
     }
 
-    scout() {
+    findFood() {
         if (this.pheromoneTimer >= this.config.homePheromoneFrequency) {
             this.board.createPheronome(this.x, this.y, "HOME");
             this.pheromoneTimer = 0;
@@ -135,7 +126,7 @@ class Ant {
             if (distanceSquared(this, food) < 1600) {
                 food.taken = true;
                 this.angle = this.angle + Math.PI;
-                this.state = "FOOD";
+                this.state = "FOUND_FOOD";
                 this.timer = 0;
                 this.pheromoneTimer = this.config.foodPheromoneFrequency;
                 return;
@@ -149,21 +140,19 @@ class Ant {
         }
     }
 
-    home() {
-        if (this.state === "FOOD") {
+    foundFood() {
             if (this.pheromoneTimer >= this.config.foodPheromoneFrequency) {
                 this.board.createPheronome(this.x, this.y, "FOOD");
                 this.pheromoneTimer = 0;
             } else {
                 this.pheromoneTimer++;
             }
-        }
 
         if (distanceSquared(this, {
             x: this.config.width / 5, y: this.config.height / 5
         }) < 1600) {
             this.angle = this.angle + Math.PI;
-            this.state = "SCOUT";
+            this.state = "FIND_FOOD";
             this.timer = 0;
             this.pheromoneTimer = this.config.homePheromoneFrequency;
         }
@@ -176,10 +165,10 @@ class Ant {
     }
 
     update() {
-        if (this.state === "SCOUT") {
-            this.scout();
-        } else if (this.state === "HOME" || this.state === "FOOD") {
-            this.home();
+        if (this.state === "FIND_FOOD") {
+            this.findFood();
+        } else if (this.state === "FOUND_FOOD") {
+            this.foundFood();
         }
     }
 }
@@ -256,8 +245,6 @@ class Board {
     }
 
     updateSurroundings() {
-        for (const ant of this.ants) ant.ants.length = 0;
-
         for (const ant of this.ants) {
             ant.leftHomePheromones.length = 0;
             ant.rightHomePheromones.length = 0;
@@ -315,13 +302,10 @@ class Board {
             this.ctx.fillRect(food.x - 5, food.y - 5, 10, 10);
 
         for (const ant of this.ants) {
-            if (ant.state === "SCOUT") {
+            if (ant.state === "FIND_FOOD") {
                 this.ctx.fillStyle = "red";
                 this.ctx.strokeStyle = "blue";
-            } else if (ant.state === "HOME") {
-                this.ctx.fillStyle = "blue";
-                this.ctx.strokeStyle = "red";
-            } else if (ant.state === "FOOD") {
+            } else if (ant.state === "FOUND_FOOD") {
                 this.ctx.fillStyle = "pink";
                 this.ctx.strokeStyle = "blue";
             }
