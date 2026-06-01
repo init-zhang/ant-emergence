@@ -55,8 +55,10 @@ class Ant {
         this.config = config;
         this.board = board
 
+        // All angles in radians.
         this.angle = Math.random() * Math.PI * 2;
         this.viewingAngleHalf = degreeToRadians(45);
+        this.turningAngle = degreeToRadians(1);
 
         this.leftHomePheromones = [];
         this.rightHomePheromones = [];
@@ -85,8 +87,14 @@ class Ant {
             angleDifference += 2 * Math.PI;
         }
 
+        // Return 1 if target is left of angle, 2 if right.
         if (Math.abs(angleDifference) <= this.viewingAngleHalf)
-            return angleDifference > 0 ? 1 : 2;
+            // With an example ant angle of 0 radian, a target to the left
+            // would have a greater radian whilst a target to the right would
+            // have a lesser radian.
+            // 0 - greater radian would result in a negative difference.
+            // 0 - lesser radian would result in a positive difference.
+            return angleDifference < 0 ? 1 : 2;
         return 0;
     }
 
@@ -134,9 +142,9 @@ class Ant {
         }
 
         if (this.leftFoodPheromones.length > this.rightFoodPheromones.length) {
-            this.angle -= degreeToRadians(10);
+            this.angle += this.turningAngle;
         } else if (this.leftFoodPheromones.length < this.rightFoodPheromones.length) {
-            this.angle += degreeToRadians(10);
+            this.angle -= this.turningAngle;
         }
     }
 
@@ -158,9 +166,9 @@ class Ant {
         }
 
         if (this.leftHomePheromones.length > this.rightHomePheromones.length) {
-            this.angle -= degreeToRadians(10);
+            this.angle += this.turningAngle;
         } else if (this.leftHomePheromones.length < this.rightHomePheromones.length) {
-            this.angle += degreeToRadians(10);
+            this.angle -= this.turningAngle;
         }
     }
 
