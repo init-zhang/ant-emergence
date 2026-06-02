@@ -1,16 +1,11 @@
 const ANTS = 50;
 const HOME_PHEROMONE_DISTANCE_SQUARED = 200 ** 2;
-const HOME_PHEROMONE_POWER       = 1;
 const HOME_PHEROMONE_FREQUENCY   = 10;
 const HOME_PHEROMONE_LIFESPAN    = 400;
 const FOOD_PHEROMONE_DISTANCE_SQUARED = 200 ** 2;
-const FOOD_PHEROMONE_POWER       = 1;
 const FOOD_PHEROMONE_FREQUENCY   = 10;
 const FOOD_PHEROMONE_LIFESPAN    = 400;
-const ANT_DISTANCE_SQUARED       = 20 ** 2;
-const ANT_POWER                  = 1;
 const MAX_VELOCITY     = 3;
-const MAX_ACCELERATION = 0.3;
 const LINE_MULTIPLIER = 5;
 const TRAIL = 0.4;
 
@@ -390,17 +385,12 @@ class Board {
 
 const defaultConfig = {
     homePheromoneDistanceSquared: HOME_PHEROMONE_DISTANCE_SQUARED,
-    homePheromonePower: HOME_PHEROMONE_POWER,
     homePheromoneFrequency: HOME_PHEROMONE_FREQUENCY,
     homePheromoneLifespan: HOME_PHEROMONE_LIFESPAN,
     foodPheromoneDistanceSquared: FOOD_PHEROMONE_DISTANCE_SQUARED,
-    foodPheromonePower: FOOD_PHEROMONE_POWER,
     foodPheromoneFrequency: FOOD_PHEROMONE_FREQUENCY,
     foodPheromoneLifespan: FOOD_PHEROMONE_LIFESPAN,
-    antDistanceSquared: ANT_DISTANCE_SQUARED,
-    antPower: ANT_POWER,
     maxVelocity: MAX_VELOCITY,
-    maxAcceleration: MAX_ACCELERATION,
     lineMultiplier: LINE_MULTIPLIER,
     trail: TRAIL,
     showTrail: false,
@@ -409,17 +399,12 @@ const defaultConfig = {
 let board = new Board("canvas", ANTS, defaultConfig);
 
 addRangeListener("homePheromoneDistance", defaultConfig, Math.sqrt(HOME_PHEROMONE_DISTANCE_SQUARED));
-addRangeListener("homePheromonePower", defaultConfig, HOME_PHEROMONE_POWER);
 addRangeListener("homePheromoneFrequency", defaultConfig, HOME_PHEROMONE_FREQUENCY);
 addRangeListener("homePheromoneLifespan", defaultConfig, HOME_PHEROMONE_LIFESPAN);
 addRangeListener("foodPheromoneDistance", defaultConfig, Math.sqrt(FOOD_PHEROMONE_DISTANCE_SQUARED));
-addRangeListener("foodPheromonePower", defaultConfig, FOOD_PHEROMONE_POWER);
 addRangeListener("foodPheromoneFrequency", defaultConfig, FOOD_PHEROMONE_FREQUENCY);
 addRangeListener("foodPheromoneLifespan", defaultConfig, FOOD_PHEROMONE_LIFESPAN);
-addRangeListener("antDistance", defaultConfig, Math.sqrt(ANT_DISTANCE_SQUARED));
-addRangeListener("antPower", defaultConfig, ANT_POWER);
 addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
-addRangeListener("maxAcceleration", defaultConfig, MAX_ACCELERATION);
 addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
 addRangeListener("trail", defaultConfig, TRAIL);
 addRangeListener("skipFrames", defaultConfig, 0);
