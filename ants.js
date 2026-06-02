@@ -1,4 +1,4 @@
-const ANTS = 1;
+const ANTS = 50;
 const HOME_PHEROMONE_DISTANCE_SQUARED = 200 ** 2;
 const HOME_PHEROMONE_POWER       = 1;
 const HOME_PHEROMONE_FREQUENCY   = 10;
@@ -107,18 +107,18 @@ class Ant {
 
         if (this.x < 0) {
             this.x = 0;
-            this.angle = Math.PI - this.angle;
+            this.angle = Math.random() * Math.PI * 2;
         } else if (this.x > this.config.width) {
             this.x = this.config.width;
-            this.angle = Math.PI - this.angle;
+            this.angle = Math.random() * Math.PI * 2;
         }
 
         if (this.y < 0) {
             this.y = 0;
-            this.angle = -this.angle;
+            this.angle = Math.random() * Math.PI * 2;
         } else if (this.y > this.config.height) {
             this.y = this.config.height;
-            this.angle = -this.angle;
+            this.angle = Math.random() * Math.PI * 2;
         }
     }
 
@@ -424,6 +424,10 @@ toggleTrailCheckbox.addEventListener("click", () => {
     defaultConfig.showTrail = toggleTrailCheckbox.checked;
 });
 toggleTrailCheckbox.dispatchEvent(new Event("click"));
+
+document.addEventListener("click",
+    (e) => board.spawnFood(e.clientX, e.clientY, 10)
+);
 
 const performanceSpan = document.getElementById("performance");
 let updateStart;
