@@ -59,6 +59,7 @@ class Ant {
         this.angle = Math.random() * Math.PI * 2;
         this.viewingAngleHalf = degreeToRadians(45);
         this.turningAngle = degreeToRadians(1);
+        this.turningRandomness = degreeToRadians(5);
 
         this.leftHomePheromones = [];
         this.rightHomePheromones = [];
@@ -96,6 +97,12 @@ class Ant {
             // 0 - lesser radian would result in a positive difference.
             return angleDifference < 0 ? 1 : 2;
         return 0;
+    }
+
+    turn() {
+        return (this.turningAngle
+            + Math.random() * 2 * this.turningRandomness - this.turningRandomness
+        );
     }
 
     move() {
@@ -139,12 +146,22 @@ class Ant {
                 this.pheromoneTimer = this.config.foodPheromoneFrequency;
                 return;
             }
+
+            const canSeeFood = this.canSee(food, this.foodPheromoneDistanceSquared);
+
+            if (canSeeFood === 1) {
+                this.angle += this.turn();
+                return;
+            } else if (canSeeFood === 2) {
+                this.angle -= this.turn();
+                return;
+            }
         }
 
         if (this.leftFoodPheromones.length > this.rightFoodPheromones.length) {
-            this.angle += this.turningAngle;
+            this.angle += this.turn();
         } else if (this.leftFoodPheromones.length < this.rightFoodPheromones.length) {
-            this.angle -= this.turningAngle;
+            this.angle -= this.turn();
         }
     }
 
@@ -156,19 +173,29 @@ class Ant {
                 this.pheromoneTimer++;
             }
 
-        if (distanceSquared(this, {
-            x: this.config.width / 5, y: this.config.height / 5
-        }) < 1600) {
+        const home = { x: this.config.width / 5, y: this.config.height / 5 }
+
+        if (distanceSquared(this, home) < 1600) {
             this.angle = this.angle + Math.PI;
             this.state = "FIND_FOOD";
             this.timer = 0;
             this.pheromoneTimer = this.config.homePheromoneFrequency;
         }
 
+        const canSeeHome = this.canSee(home, this.homePheromoneDistanceSquared);
+
+        if (canSeeHome === 1) {
+            this.angle += this.turn();
+            return;
+        } else if (canSeeHome === 2) {
+            this.angle -= this.turn();
+            return;
+        }
+
         if (this.leftHomePheromones.length > this.rightHomePheromones.length) {
-            this.angle += this.turningAngle;
+            this.angle += this.turn();
         } else if (this.leftHomePheromones.length < this.rightHomePheromones.length) {
-            this.angle -= this.turningAngle;
+            this.angle -= this.turn();
         }
     }
 
@@ -327,8 +354,6 @@ class Board {
     }
 
     update() {
-        this.createPheronome(this.config.width / 5, this.config.height / 5, "HOME");
-
         this.updateSurroundings();
 
         for (const ant of this.ants) ant.update();
