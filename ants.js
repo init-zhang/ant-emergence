@@ -9,26 +9,6 @@ const MAX_VELOCITY     = 3;
 const LINE_MULTIPLIER = 5;
 const TRAIL = 0.4;
 
-function addRangeListener(sliderID, config, defaultValue) {
-    const input = document.getElementById(sliderID);
-    const span = document.getElementById(sliderID + "Value");
-    input.value = defaultValue;
-    span.textContent = input.value;
-    input.addEventListener("input", () => {
-        // Specific use case for distances as they need to be squared
-        if (
-            sliderID === "homePheromoneDistance" ||
-            sliderID === "foodPheromoneDistance" ||
-            sliderID === "antsDistance"
-        ) {
-            config[sliderID + "Squared"] = Number(input.value) ** 2;
-        } else {
-            config[sliderID] = Number(input.value);
-        }
-        span.textContent = input.value;
-    });
-}
-
 function distanceSquared(u, v) {
     const dx = u.x - v.x;
     const dy = u.y - v.y;
@@ -51,6 +31,7 @@ class Ant {
         this.board = board
 
         // All angles in radians.
+        // 0 radian points east, going north increases radian.
         this.angle = Math.random() * Math.PI * 2;
         this.viewingAngleHalf = degreeToRadians(45);
         this.turningAngle = degreeToRadians(1);
@@ -64,7 +45,6 @@ class Ant {
 
         this.state = "FIND_FOOD";
         this.pheromoneTimer = this.config.homePheromoneFrequency;
-        this.timer = 0;
     }
 
     canSee(target, distanceSquared_) {
@@ -77,6 +57,7 @@ class Ant {
 
         let angleDifference = this.angle - angleToTarget;
 
+        // Clamp within -/+ PI for correct angle wraparound.
         if (angleDifference > Math.PI) {
             angleDifference -= 2 * Math.PI;
         } else if (angleDifference < -Math.PI) {
@@ -95,8 +76,10 @@ class Ant {
     }
 
     turn() {
-        return (this.turningAngle
-            + Math.random() * 2 * this.turningRandomness - this.turningRandomness
+        return (
+            this.turningAngle
+            + Math.random() * 2 * this.turningRandomness
+            - this.turningRandomness
         );
     }
 
@@ -137,7 +120,6 @@ class Ant {
                 food.taken = true;
                 this.angle = this.angle + Math.PI;
                 this.state = "FOUND_FOOD";
-                this.timer = 0;
                 this.pheromoneTimer = this.config.foodPheromoneFrequency;
                 return;
             }
@@ -161,19 +143,18 @@ class Ant {
     }
 
     foundFood() {
-            if (this.pheromoneTimer >= this.config.foodPheromoneFrequency) {
-                this.board.createPheronome(this.x, this.y, "FOOD");
-                this.pheromoneTimer = 0;
-            } else {
-                this.pheromoneTimer++;
-            }
+        if (this.pheromoneTimer >= this.config.foodPheromoneFrequency) {
+            this.board.createPheronome(this.x, this.y, "FOOD");
+            this.pheromoneTimer = 0;
+        } else {
+            this.pheromoneTimer++;
+        }
 
         const home = { x: this.config.width / 5, y: this.config.height / 5 }
 
         if (distanceSquared(this, home) < 1600) {
             this.angle = this.angle + Math.PI;
             this.state = "FIND_FOOD";
-            this.timer = 0;
             this.pheromoneTimer = this.config.homePheromoneFrequency;
         }
 
@@ -274,6 +255,16 @@ class Board {
         }
     }
 
+    createPheronome(x, y, type) {
+        x += randomInclusiveInt(-5, 5);
+        y += randomInclusiveInt(-5, 5);
+        if (type === "HOME") {
+            this.homePheromones.push(new Pheromone(x, y));
+        } else if (type === "FOOD") {
+            this.foodPheromones.push(new Pheromone(x, y));
+        }
+    }
+
     updateSurroundings() {
         for (const ant of this.ants) {
             ant.leftHomePheromones.length = 0;
@@ -309,7 +300,7 @@ class Board {
     }
 
     draw() {
-        this.ctx.fillStyle = `rgba(255,255,255,${1-this.config.trail})`;
+        this.ctx.fillStyle = `rgba(255,255,255,${1 - this.config.trail})`;
         this.ctx.fillRect(0, 0, this.config.width, this.config.height);
 
         this.ctx.fillStyle = "black";
@@ -371,16 +362,6 @@ class Board {
             this.skipFrameTimer++;
         }
     }
-
-    createPheronome(x, y, type) {
-        x += randomInclusiveInt(-5, 5);
-        y += randomInclusiveInt(-5, 5);
-        if (type === "HOME") {
-            this.homePheromones.push(new Pheromone(x, y));
-        } else if (type === "FOOD") {
-            this.foodPheromones.push(new Pheromone(x, y));
-        }
-    }
 }
 
 const defaultConfig = {
@@ -398,6 +379,29 @@ const defaultConfig = {
 }
 let board = new Board("canvas", ANTS, defaultConfig);
 
+// Range listeners
+//
+
+function addRangeListener(sliderID, config, defaultValue) {
+    const input = document.getElementById(sliderID);
+    const span = document.getElementById(sliderID + "Value");
+    input.value = defaultValue;
+    span.textContent = input.value;
+    input.addEventListener("input", () => {
+        // Specific use case for distances as they need to be squared
+        if (
+            sliderID === "homePheromoneDistance" ||
+            sliderID === "foodPheromoneDistance" ||
+            sliderID === "antsDistance"
+        ) {
+            config[sliderID + "Squared"] = Number(input.value) ** 2;
+        } else {
+            config[sliderID] = Number(input.value);
+        }
+        span.textContent = input.value;
+    });
+}
+
 addRangeListener("homePheromoneDistance", defaultConfig, Math.sqrt(HOME_PHEROMONE_DISTANCE_SQUARED));
 addRangeListener("homePheromoneFrequency", defaultConfig, HOME_PHEROMONE_FREQUENCY);
 addRangeListener("homePheromoneLifespan", defaultConfig, HOME_PHEROMONE_LIFESPAN);
@@ -408,6 +412,9 @@ addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
 addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
 addRangeListener("trail", defaultConfig, TRAIL);
 addRangeListener("skipFrames", defaultConfig, 0);
+
+// Other config
+//
 
 let running = true;
 const toggleButton = document.getElementById("toggle");
@@ -422,11 +429,9 @@ toggleButton.addEventListener("click", () => {
     }
 });
 
-let ants = ANTS;
 const antsInput = document.getElementById("ants")
 document.getElementById("restart").addEventListener("click", () => {
-    ants = antsInput.value;
-    board = new Board("canvas", ants, defaultConfig);
+    board = new Board("canvas", antsInput.value, defaultConfig);
 });
 
 const toggleTrailCheckbox = document.getElementById("toggleTrail");
@@ -435,8 +440,8 @@ toggleTrailCheckbox.addEventListener("click", () => {
 });
 toggleTrailCheckbox.dispatchEvent(new Event("click"));
 
-document.addEventListener("click",
-    (e) => board.spawnFood(e.clientX, e.clientY, 10)
+document.addEventListener(
+    "click", (e) => board.spawnFood(e.clientX, e.clientY, 10)
 );
 
 const performanceSpan = document.getElementById("performance");
