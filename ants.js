@@ -99,17 +99,23 @@ class Ant {
                 this.x -= Math.cos(this.angle) * this.config.maxVelocity;
                 this.y -= Math.sin(this.angle) * this.config.maxVelocity;
 
-                if (this.angle >= (7 * Math.PI) / 4 || this.angle <= (Math.PI) / 4) {
-                    this.angle += Math.PI;
-                } else if (this.angle > (Math.PI) / 4 && this.angle <= (3 * Math.PI) / 4) {
-                    this.angle += Math.PI;
-                } else if (this.angle > (3 * Math.PI) / 4 && this.angle <= (5 * Math.PI) / 4) {
-                    this.angle -= Math.PI;
-                } else {
-                    this.angle -= Math.PI;
-                }
-            }
+                const distToTop = Math.abs(this.y - wall.top);
+                const distToBottom = Math.abs(this.y - wall.bottom);
+                const distToLeft = Math.abs(this.x - wall.left);
+                const distToRight = Math.abs(this.x - wall.right);
 
+                const minDist = Math.min(distToTop, distToBottom, distToLeft, distToRight);
+
+                if (minDist === distToTop || minDist === distToBottom) {
+                    this.angle = -this.angle;
+                } else {
+                    this.angle = Math.PI - this.angle;
+                }
+                this.angle += + Math.random() * 2 * this.turningRandomness - this.turningRandomness
+
+                this.angle = this.angle % (2 * Math.PI);
+                if (this.angle < 0) this.angle += 2 * Math.PI;
+            }
         }
 
         if (this.x < 0) {
