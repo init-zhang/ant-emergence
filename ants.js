@@ -15,6 +15,10 @@ function distanceSquared(u, v) {
     return dx * dx + dy * dy;
 }
 
+function withinRect(x, y, top, bottom, left, right) {
+    return (left < x && x < right && top < y && y < bottom)
+}
+
 function randomInclusiveInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -85,10 +89,28 @@ class Ant {
 
     move() {
         this.angle = this.angle % (2 * Math.PI);
-
         if (this.angle < 0) this.angle += 2 * Math.PI;
+
         this.x += Math.cos(this.angle) * this.config.maxVelocity;
         this.y += Math.sin(this.angle) * this.config.maxVelocity;
+
+        for (const wall of this.board.walls) {
+            if (withinRect(this.x, this.y, wall.top, wall.bottom, wall.left, wall.right)) {
+                this.x -= Math.cos(this.angle) * this.config.maxVelocity;
+                this.y -= Math.sin(this.angle) * this.config.maxVelocity;
+
+                if (this.angle >= (7 * Math.PI) / 4 || this.angle <= (Math.PI) / 4) {
+                    this.angle += Math.PI;
+                } else if (this.angle > (Math.PI) / 4 && this.angle <= (3 * Math.PI) / 4) {
+                    this.angle += Math.PI;
+                } else if (this.angle > (3 * Math.PI) / 4 && this.angle <= (5 * Math.PI) / 4) {
+                    this.angle -= Math.PI;
+                } else {
+                    this.angle -= Math.PI;
+                }
+            }
+
+        }
 
         if (this.x < 0) {
             this.x = 0;
@@ -204,6 +226,19 @@ class Food {
     }
 }
 
+class Wall {
+    constructor(x, y, width, height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.top = this.y - height / 2;
+        this.bottom = this.y + height / 2;
+        this.left = this.x - width / 2;
+        this.right = this.x + width / 2;
+    }
+}
+
 class Board {
     constructor(canvasId, antsCount, config) {
         this.canvas = document.getElementById(canvasId);
@@ -213,6 +248,7 @@ class Board {
         this.homePheromones = [];
         this.foodPheromones = [];
         this.food = [];
+        this.walls = [];
         this.resizeCanvas();
         this.initializeAnts(antsCount);
         this.skipFrameTimer = this.config.skipFrames;
@@ -253,6 +289,10 @@ class Board {
                 )
             );
         }
+    }
+
+    spawnWall(x, y, width, height) {
+        this.walls.push(new Wall(x, y, width, height));
     }
 
     createPheronome(x, y, type) {
@@ -305,6 +345,10 @@ class Board {
 
         this.ctx.fillStyle = "black";
         this.ctx.fillRect(this.config.width / 5 - 20, this.config.height / 5 - 20, 40, 40);
+
+        this.ctx.fillStyle = "brown";
+        for (const wall of this.walls)
+            this.ctx.fillRect(wall.left, wall.top, wall.width, wall.height);
 
         this.ctx.lineWidth = 1;
 
@@ -434,15 +478,25 @@ document.getElementById("restart").addEventListener("click", () => {
     board = new Board("canvas", antsInput.value, defaultConfig);
 });
 
+let selectedSummon = null;
+const summonInputs = document.getElementById("summonInputs");
+summonInputs.addEventListener("change", (event) => {
+    if (event.target.type === "radio") selectedSummon = event.target.value;
+});
+document.getElementById("canvas").addEventListener("click", (e) => {
+    if (selectedSummon === "food") {
+        board.spawnFood(e.clientX, e.clientY, 10);
+    } else if (selectedSummon === "wall") {
+        board.spawnWall(e.clientX, e.clientY, 50, 50);
+    }
+    board.draw();
+});
+
 const toggleTrailCheckbox = document.getElementById("toggleTrail");
 toggleTrailCheckbox.addEventListener("click", () => {
     defaultConfig.showTrail = toggleTrailCheckbox.checked;
 });
 toggleTrailCheckbox.dispatchEvent(new Event("click"));
-
-document.addEventListener(
-    "click", (e) => board.spawnFood(e.clientX, e.clientY, 10)
-);
 
 const performanceSpan = document.getElementById("performance");
 let updateStart;
