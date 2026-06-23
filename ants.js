@@ -257,7 +257,6 @@ class Board {
         this.walls = [];
         this.resizeCanvas();
         this.initializeAnts(antsCount);
-        this.skipFrameTimer = this.config.skipFrames;
 
         this.spawnFood(this.config.width / 5 * 4, this.config.height / 5 * 4, 100);
         this.spawnFood(this.config.width / 5, this.config.height / 5 * 4, 10);
@@ -404,13 +403,6 @@ class Board {
             return p.age <= this.config.foodPheromoneLifespan;
         });
         this.food = this.food.filter(food => !(food.taken));
-
-        if (this.skipFrameTimer >= this.config.skipFrames) {
-            this.draw();
-            this.skipFrameTimer = 0;
-        } else {
-            this.skipFrameTimer++;
-        }
     }
 }
 
@@ -425,7 +417,6 @@ const defaultConfig = {
     lineMultiplier: LINE_MULTIPLIER,
     trail: TRAIL,
     showTrail: false,
-    skipFrames: 0
 }
 let board = new Board("canvas", ANTS, defaultConfig);
 
@@ -461,7 +452,6 @@ addRangeListener("foodPheromoneLifespan", defaultConfig, FOOD_PHEROMONE_LIFESPAN
 addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
 addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
 addRangeListener("trail", defaultConfig, TRAIL);
-addRangeListener("skipFrames", defaultConfig, 0);
 
 // Other config
 //
@@ -506,7 +496,13 @@ toggleTrailCheckbox.dispatchEvent(new Event("click"));
 
 const performanceSpan = document.getElementById("performance");
 let updateStart;
-let udpateTime;
+let updateTimeSum = 0;
+let updateTimeCount = 0;
+let updateTime = 0;
+let drawStart;
+let drawTimeSum = 0;
+let drawTimeCount = 0;
+let drawTime = 0;
 let frameCount = 0;
 let lastTime = performance.now();
 let now;
@@ -515,7 +511,12 @@ let fps = 0;
 function loop() {
     updateStart = performance.now();
     board.update();
-    updateTime = performance.now() - updateStart;
+    updateTimeSum += performance.now() - updateStart;
+    updateTimeCount++;
+    drawStart = performance.now();
+    board.draw();
+    drawTimeSum += performance.now() - drawStart;
+    drawTimeCount++;
 
     frameCount++;
     now = performance.now();
@@ -523,9 +524,15 @@ function loop() {
         fps = frameCount;
         frameCount = 0;
         lastTime = now;
+        updateTime = updateTimeSum / updateTimeCount;
+        drawTime = drawTimeSum / drawTimeCount;
+        updateTimeSum = 0;
+        updateTimeCount = 0;
+        drawTimeSum = 0;
+        drawTimeCount = 0;
     }
 
-    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime.toFixed(3)}ms`;
+    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime.toFixed(3)}ms, Draw: ${drawTime.toFixed(3)}ms`;
 
     if (running) requestAnimationFrame(loop);
 }
