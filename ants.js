@@ -5,6 +5,7 @@ const HOME_PHEROMONE_LIFESPAN    = 400;
 const FOOD_PHEROMONE_DISTANCE_SQUARED = 200 ** 2;
 const FOOD_PHEROMONE_FREQUENCY   = 10;
 const FOOD_PHEROMONE_LIFESPAN    = 400;
+const PHEROMONE_GRID_SIZE = 200;
 const MAX_VELOCITY     = 3;
 const LINE_MULTIPLIER = 5;
 const TRAIL = 0.4;
@@ -253,6 +254,7 @@ class Board {
         this.ants = [];
         this.homePheromones = [];
         this.foodPheromones = [];
+        this.pheromoneGrid = new Map();
         this.food = [];
         this.walls = [];
         this.resizeCanvas();
@@ -270,6 +272,7 @@ class Board {
         this.config.height = window.innerHeight;
         this.canvas.width = this.config.width;
         this.canvas.height = this.config.height;
+        this.rebuildGrid();
     }
 
     initializeAnts(antsCount) {
@@ -303,11 +306,50 @@ class Board {
     createPheronome(x, y, type) {
         x += randomInclusiveInt(-5, 5);
         y += randomInclusiveInt(-5, 5);
+
         if (type === "HOME") {
             this.homePheromones.push(new Pheromone(x, y));
         } else if (type === "FOOD") {
             this.foodPheromones.push(new Pheromone(x, y));
         }
+    }
+
+    addPheromoneToGrid(pheromone, type) {
+        const cellX = Math.floor(pheromone.x, this.config.pheromoneGridSize);
+        const cellY = Math.floor(pheromone.y, this.config.pheromoneGridSize);
+        const key = `${cellX},${cellY},${type}`;
+
+        if (!this.pheromoneGrid.has(key))
+            this.pheromoneGrid.set(key, []);
+        this.pheromoneGrid.get(key).push(pheromone);
+    }
+
+    rebuildGrid() {
+        this.pheromoneGrid.clear();
+
+        for (const pheromone of this.homePheromones) {
+            this.addPheromoneToGrid(pheromone, "HOME");
+        }
+        for (const pheromone of this.foodPheromones) {
+            this.addPheromoneToGrid(pheromone, "FOOD");
+        }}
+
+    getNearbyPheromones(x, y, type, distanceSquared_) {
+        const cellX = Math.floor(x / this.config.pheromoneGridSize);
+        const cellY = Math.floor(y / this.config.pheromoneGridSize);
+        const searchRadius = Math.ceil(Math.sqrt(distanceSquared_) / this.config.pheromoneGridSize) + 1;
+
+        const nearby = [];
+
+        for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+            for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+                const key = `${cellX + dx},${cellY + dy},${type}`;
+                if (this.pheromoneGrid.has(key))
+                    nearby.push(...this.pheromoneGrid.get(key));
+            }
+        }
+
+        return nearby;
     }
 
     updateSurroundings() {
@@ -318,7 +360,12 @@ class Board {
             ant.rightFoodPheromones.length = 0;
             ant.food.length = 0;
 
-            for (const pheromone of this.homePheromones) {
+            const nearbyHomePheromones = this.getNearbyPheromones(
+                ant.x, ant.y, "HOME",
+                this.config.homePheromoneDistanceSquared
+            );
+
+            for (const pheromone of nearbyHomePheromones) {
                 const canSee = ant.canSee(pheromone, this.config.homePheromoneDistanceSquared)
                 if (canSee === 1) {
                     ant.leftHomePheromones.push(pheromone);
@@ -327,7 +374,12 @@ class Board {
                 }
             }
 
-            for (const pheromone of this.foodPheromones) {
+            const nearbyFoodPheromones = this.getNearbyPheromones(
+                ant.x, ant.y, "FOOD",
+                this.config.foodPheromoneDistanceSquared
+            );
+
+            for (const pheromone of nearbyFoodPheromones) {
                 const canSee = ant.canSee(pheromone, this.config.foodPheromoneDistanceSquared)
                 if (canSee === 1) {
                     ant.leftFoodPheromones.push(pheromone);
@@ -342,6 +394,25 @@ class Board {
                 }
             }
         }
+    }
+
+    update() {
+        this.updateSurroundings();
+
+        for (const ant of this.ants) ant.update();
+        for (const ant of this.ants) ant.move();
+
+        this.homePheromones = this.homePheromones.filter(p => {
+            p.update();
+            return p.age <= this.config.homePheromoneLifespan;
+        });
+        this.foodPheromones = this.foodPheromones.filter(p => {
+            p.update();
+            return p.age <= this.config.foodPheromoneLifespan;
+        });
+        this.food = this.food.filter(food => !(food.taken));
+
+        this.rebuildGrid();
     }
 
     draw() {
@@ -387,23 +458,6 @@ class Board {
             this.ctx.stroke();
         }
     }
-
-    update() {
-        this.updateSurroundings();
-
-        for (const ant of this.ants) ant.update();
-        for (const ant of this.ants) ant.move();
-
-        this.homePheromones = this.homePheromones.filter(p => {
-            p.update();
-            return p.age <= this.config.homePheromoneLifespan;
-        });
-        this.foodPheromones = this.foodPheromones.filter(p => {
-            p.update();
-            return p.age <= this.config.foodPheromoneLifespan;
-        });
-        this.food = this.food.filter(food => !(food.taken));
-    }
 }
 
 const defaultConfig = {
@@ -413,6 +467,7 @@ const defaultConfig = {
     foodPheromoneDistanceSquared: FOOD_PHEROMONE_DISTANCE_SQUARED,
     foodPheromoneFrequency: FOOD_PHEROMONE_FREQUENCY,
     foodPheromoneLifespan: FOOD_PHEROMONE_LIFESPAN,
+    pheromoneGridSize: PHEROMONE_GRID_SIZE,
     maxVelocity: MAX_VELOCITY,
     lineMultiplier: LINE_MULTIPLIER,
     trail: TRAIL,
