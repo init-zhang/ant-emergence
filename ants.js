@@ -337,7 +337,7 @@ class Board {
     getNearbyPheromones(x, y, type, distanceSquared_) {
         const cellX = Math.floor(x / this.config.pheromoneGridSize);
         const cellY = Math.floor(y / this.config.pheromoneGridSize);
-        const searchRadius = Math.ceil(Math.sqrt(distanceSquared_) / this.config.pheromoneGridSize) + 1;
+        const searchRadius = Math.ceil(Math.sqrt(distanceSquared_) / this.config.pheromoneGridSize);
 
         const nearby = [];
 
