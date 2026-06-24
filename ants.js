@@ -1,14 +1,17 @@
-const ANTS = 50;
-const HOME_PHEROMONE_DISTANCE_SQUARED = 200 ** 2;
-const HOME_PHEROMONE_FREQUENCY   = 10;
-const HOME_PHEROMONE_LIFESPAN    = 400;
-const FOOD_PHEROMONE_DISTANCE_SQUARED = 200 ** 2;
-const FOOD_PHEROMONE_FREQUENCY   = 10;
-const FOOD_PHEROMONE_LIFESPAN    = 400;
-const GRID_SIZE = 200;
-const MAX_VELOCITY     = 3;
-const LINE_MULTIPLIER = 5;
-const TRAIL = 0.4;
+const defaultConfig = {
+    ants:                         100,
+    homePheromoneDistanceSquared: 200 ** 2,
+    homePheromoneFrequency:       10,
+    homePheromoneLifespan:        400,
+    foodPheromoneDistanceSquared: 200 ** 2,
+    foodPheromoneFrequency:       10,
+    foodPheromoneLifespan:        400,
+    gridSize:                     200,
+    maxVelocity:                  3,
+    lineMultiplier:               5,
+    trail:                        0.4,
+    showTrail:                    false,
+}
 
 function distanceSquared(u, v) {
     const dx = u.x - v.x;
@@ -431,20 +434,7 @@ class Board {
     }
 }
 
-const defaultConfig = {
-    homePheromoneDistanceSquared: HOME_PHEROMONE_DISTANCE_SQUARED,
-    homePheromoneFrequency: HOME_PHEROMONE_FREQUENCY,
-    homePheromoneLifespan: HOME_PHEROMONE_LIFESPAN,
-    foodPheromoneDistanceSquared: FOOD_PHEROMONE_DISTANCE_SQUARED,
-    foodPheromoneFrequency: FOOD_PHEROMONE_FREQUENCY,
-    foodPheromoneLifespan: FOOD_PHEROMONE_LIFESPAN,
-    gridSize: GRID_SIZE,
-    maxVelocity: MAX_VELOCITY,
-    lineMultiplier: LINE_MULTIPLIER,
-    trail: TRAIL,
-    showTrail: false,
-}
-let board = new Board("canvas", ANTS, defaultConfig);
+let board = new Board("canvas", defaultConfig.ants, defaultConfig);
 
 // Range listeners
 //
@@ -452,9 +442,21 @@ let board = new Board("canvas", ANTS, defaultConfig);
 function addRangeListener(sliderID, config, defaultValue) {
     const input = document.getElementById(sliderID);
     const span = document.getElementById(sliderID + "Value");
-    input.value = defaultValue;
+
+    // Specific use case for distances as they need to be rooted
+    if (
+        sliderID === "homePheromoneDistance" ||
+        sliderID === "foodPheromoneDistance" ||
+        sliderID === "antsDistance"
+    ) {
+        input.value = Math.sqrt(config[sliderID]);
+    } else {
+        input.value = config[sliderID];
+    }
+
     span.textContent = input.value;
     input.addEventListener("input", () => {
+
         // Specific use case for distances as they need to be squared
         if (
             sliderID === "homePheromoneDistance" ||
@@ -465,19 +467,20 @@ function addRangeListener(sliderID, config, defaultValue) {
         } else {
             config[sliderID] = Number(input.value);
         }
+
         span.textContent = input.value;
     });
 }
 
-addRangeListener("homePheromoneDistance", defaultConfig, Math.sqrt(HOME_PHEROMONE_DISTANCE_SQUARED));
-addRangeListener("homePheromoneFrequency", defaultConfig, HOME_PHEROMONE_FREQUENCY);
-addRangeListener("homePheromoneLifespan", defaultConfig, HOME_PHEROMONE_LIFESPAN);
-addRangeListener("foodPheromoneDistance", defaultConfig, Math.sqrt(FOOD_PHEROMONE_DISTANCE_SQUARED));
-addRangeListener("foodPheromoneFrequency", defaultConfig, FOOD_PHEROMONE_FREQUENCY);
-addRangeListener("foodPheromoneLifespan", defaultConfig, FOOD_PHEROMONE_LIFESPAN);
-addRangeListener("maxVelocity", defaultConfig, MAX_VELOCITY);
-addRangeListener("lineMultiplier", defaultConfig, LINE_MULTIPLIER);
-addRangeListener("trail", defaultConfig, TRAIL);
+addRangeListener("homePheromoneDistance", defaultConfig);
+addRangeListener("homePheromoneFrequency", defaultConfig);
+addRangeListener("homePheromoneLifespan", defaultConfig);
+addRangeListener("foodPheromoneDistance", defaultConfig);
+addRangeListener("foodPheromoneFrequency", defaultConfig);
+addRangeListener("foodPheromoneLifespan", defaultConfig);
+addRangeListener("maxVelocity", defaultConfig);
+addRangeListener("lineMultiplier", defaultConfig);
+addRangeListener("trail", defaultConfig);
 
 // Other config
 //
