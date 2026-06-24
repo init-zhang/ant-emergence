@@ -19,10 +19,6 @@ function distanceSquared(u, v) {
     return dx * dx + dy * dy;
 }
 
-function withinRect(x, y, top, bottom, left, right) {
-    return (left < x && x < right && top < y && y < bottom)
-}
-
 function randomInclusiveInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -65,7 +61,7 @@ class Ant {
 
         let angleDifference = this.angle - angleToTarget;
 
-        // Clamp within -/+ PI for correct angle wraparound.
+        // Clamp [-pi, pi] for correct angle wraparound.
         if (angleDifference > Math.PI) {
             angleDifference -= 2 * Math.PI;
         } else if (angleDifference < -Math.PI) {
@@ -73,31 +69,30 @@ class Ant {
         }
 
         // Return 1 if target is left of angle, 2 if right.
-        if (Math.abs(angleDifference) <= this.viewingAngleHalf)
-            // With an example ant angle of 0 radian, a target to the left
-            // would have a greater radian whilst a target to the right would
-            // have a lesser radian.
-            // 0 - greater radian would result in a negative difference.
-            // 0 - lesser radian would result in a positive difference.
+        if (Math.abs(angleDifference) <= this.viewingAngleHalf) {
+            // Left targets have greater radians, right have lesser.
+            // angle - greater is a negative difference, less is positive.
             return angleDifference < 0 ? 1 : 2;
+        }
         return 0;
     }
 
+    // Turning has randomness.
     turn() {
-        return (
-            this.turningAngle
+        return (this.turningAngle
             + Math.random() * 2 * this.turningRandomness
-            - this.turningRandomness
-        );
+            - this.turningRandomness);
     }
 
     move() {
+        // Clamp angle to [0, 2pi).
         this.angle = this.angle % (2 * Math.PI);
         if (this.angle < 0) this.angle += 2 * Math.PI;
 
         this.x += Math.cos(this.angle) * this.config.maxVelocity;
         this.y += Math.sin(this.angle) * this.config.maxVelocity;
 
+        // Randomly bounces off edges.
         if (this.x < 0) {
             this.x = 0;
             this.angle = Math.random() * Math.PI * 2;
@@ -132,7 +127,7 @@ class Ant {
                 return;
             }
 
-            const canSeeFood = this.canSee(food, this.foodPheromoneDistanceSquared);
+            const canSeeFood = this.canSee(food, this.config.foodPheromoneDistanceSquared);
 
             if (canSeeFood === 1) {
                 this.angle += this.turn();
@@ -143,9 +138,12 @@ class Ant {
             }
         }
 
-        if (this.leftFoodPheromones.length > this.rightFoodPheromones.length) {
+        const left = this.leftFoodPheromones.length;
+        const right = this.rightFoodPheromones.length;
+
+        if (left > right) {
             this.angle += this.turn();
-        } else if (this.leftFoodPheromones.length < this.rightFoodPheromones.length) {
+        } else if (left < right) {
             this.angle -= this.turn();
         }
     }
@@ -166,7 +164,7 @@ class Ant {
             this.pheromoneTimer = this.config.homePheromoneFrequency;
         }
 
-        const canSeeHome = this.canSee(home, this.homePheromoneDistanceSquared);
+        const canSeeHome = this.canSee(home, this.config.homePheromoneDistanceSquared);
 
         if (canSeeHome === 1) {
             this.angle += this.turn();
@@ -176,9 +174,12 @@ class Ant {
             return;
         }
 
-        if (this.leftHomePheromones.length > this.rightHomePheromones.length) {
+        const left = this.leftHomePheromones.length;
+        const right = this.rightHomePheromones.length;
+
+        if (left > right) {
             this.angle += this.turn();
-        } else if (this.leftHomePheromones.length < this.rightHomePheromones.length) {
+        } else if (left < right) {
             this.angle -= this.turn();
         }
     }
@@ -212,23 +213,10 @@ class Food {
     }
 }
 
-class Wall {
-    constructor(x, y, width, height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.top = this.y - height / 2;
-        this.bottom = this.y + height / 2;
-        this.left = this.x - width / 2;
-        this.right = this.x + width / 2;
-    }
-}
-
 class Board {
     constructor(canvasId, antsCount, config) {
         this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext("2d", { alpha: false });
+        this.ctx = this.canvas.getContext("2d");
         this.config = config;
         this.ants = [];
         this.homePheromones = [];
@@ -238,11 +226,11 @@ class Board {
         this.resizeCanvas();
         this.initializeAnts(antsCount);
 
+        window.addEventListener("resize", () => this.resizeCanvas());
+
         this.spawnFood(this.config.width / 5 * 4, this.config.height / 5 * 4, 100);
         this.spawnFood(this.config.width / 5, this.config.height / 5 * 4, 10);
         this.spawnFood(this.config.width / 5 * 4, this.config.height / 5, 50);
-
-        window.addEventListener("resize", () => this.resizeCanvas());
     }
 
     resizeCanvas() {
@@ -255,28 +243,23 @@ class Board {
 
     initializeAnts(antsCount) {
         for (let i = 0; i < antsCount; i++) {
-            this.ants.push(
-                new Ant(
-                    this.config.width / 5,
-                    this.config.height / 5,
-                    this.config,
-                    this
-                )
-            );
+            this.ants.push(new Ant(
+                this.config.width / 5, this.config.height / 5,
+                this.config, this
+            ));
         }
     }
 
     spawnFood(x, y, count) {
         for (let i = 0; i < count; i++) {
-            this.food.push(
-                new Food(
-                    x + randomInclusiveInt(-20, 20),
-                    y + randomInclusiveInt(-20, 20)
-                )
-            );
+            this.food.push(new Food(
+                x + randomInclusiveInt(-20, 20),
+                y + randomInclusiveInt(-20, 20)
+            ));
         }
     }
 
+    // Pheromones are created with random spread.
     createPheronome(x, y, type) {
         x += randomInclusiveInt(-5, 5);
         y += randomInclusiveInt(-5, 5);
@@ -293,23 +276,19 @@ class Board {
         const cellY = Math.floor(pheromone.y, this.config.gridSize);
         const key = `${cellX},${cellY},${type}`;
 
-        if (!this.grid.has(key))
-            this.grid.set(key, []);
+        if (!this.grid.has(key)) this.grid.set(key, []);
         this.grid.get(key).push(pheromone);
     }
 
     rebuildGrid() {
         this.grid.clear();
 
-        for (const pheromone of this.homePheromones) {
+        for (const pheromone of this.homePheromones)
             this.addToGrid(pheromone, "HOME_P");
-        }
-        for (const pheromone of this.foodPheromones) {
+        for (const pheromone of this.foodPheromones)
             this.addToGrid(pheromone, "FOOD_P");
-        }
-        for (const food of this.food) {
+        for (const food of this.food)
             this.addToGrid(food, "FOOD");
-        }
     }
 
     getNearbyType(x, y, type, distanceSquared_) {
