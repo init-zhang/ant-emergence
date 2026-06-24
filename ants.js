@@ -95,30 +95,6 @@ class Ant {
         this.x += Math.cos(this.angle) * this.config.maxVelocity;
         this.y += Math.sin(this.angle) * this.config.maxVelocity;
 
-        for (const wall of this.board.walls) {
-            if (withinRect(this.x, this.y, wall.top, wall.bottom, wall.left, wall.right)) {
-                this.x -= Math.cos(this.angle) * this.config.maxVelocity;
-                this.y -= Math.sin(this.angle) * this.config.maxVelocity;
-
-                const distToTop = Math.abs(this.y - wall.top);
-                const distToBottom = Math.abs(this.y - wall.bottom);
-                const distToLeft = Math.abs(this.x - wall.left);
-                const distToRight = Math.abs(this.x - wall.right);
-
-                const minDist = Math.min(distToTop, distToBottom, distToLeft, distToRight);
-
-                if (minDist === distToTop || minDist === distToBottom) {
-                    this.angle = -this.angle;
-                } else {
-                    this.angle = Math.PI - this.angle;
-                }
-                this.angle += + Math.random() * 2 * this.turningRandomness - this.turningRandomness
-
-                this.angle = this.angle % (2 * Math.PI);
-                if (this.angle < 0) this.angle += 2 * Math.PI;
-            }
-        }
-
         if (this.x < 0) {
             this.x = 0;
             this.angle = Math.random() * Math.PI * 2;
@@ -256,7 +232,6 @@ class Board {
         this.foodPheromones = [];
         this.grid = new Map();
         this.food = [];
-        this.walls = [];
         this.resizeCanvas();
         this.initializeAnts(antsCount);
 
@@ -297,10 +272,6 @@ class Board {
                 )
             );
         }
-    }
-
-    spawnWall(x, y, width, height) {
-        this.walls.push(new Wall(x, y, width, height));
     }
 
     createPheronome(x, y, type) {
@@ -426,10 +397,6 @@ class Board {
         this.ctx.fillStyle = "black";
         this.ctx.fillRect(this.config.width / 5 - 20, this.config.height / 5 - 20, 40, 40);
 
-        this.ctx.fillStyle = "brown";
-        for (const wall of this.walls)
-            this.ctx.fillRect(wall.left, wall.top, wall.width, wall.height);
-
         this.ctx.lineWidth = 1;
 
         if (this.config.showTrail) {
@@ -533,17 +500,8 @@ document.getElementById("restart").addEventListener("click", () => {
     board = new Board("canvas", antsInput.value, defaultConfig);
 });
 
-let selectedSummon = null;
-const summonInputs = document.getElementById("summonInputs");
-summonInputs.addEventListener("change", (event) => {
-    if (event.target.type === "radio") selectedSummon = event.target.value;
-});
 document.getElementById("canvas").addEventListener("click", (e) => {
-    if (selectedSummon === "food") {
-        board.spawnFood(e.clientX, e.clientY, 10);
-    } else if (selectedSummon === "wall") {
-        board.spawnWall(e.clientX, e.clientY, 50, 50);
-    }
+    board.spawnFood(e.clientX, e.clientY, 10);
     board.draw();
 });
 
