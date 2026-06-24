@@ -272,8 +272,8 @@ class Board {
     }
 
     addToGrid(pheromone, type) {
-        const cellX = Math.floor(pheromone.x, this.config.gridSize);
-        const cellY = Math.floor(pheromone.y, this.config.gridSize);
+        const cellX = Math.floor(pheromone.x / this.config.gridSize);
+        const cellY = Math.floor(pheromone.y / this.config.gridSize);
         const key = `${cellX},${cellY},${type}`;
 
         if (!this.grid.has(key)) this.grid.set(key, []);
