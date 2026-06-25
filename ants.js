@@ -1,15 +1,15 @@
 const defaultConfig = {
     ants:                         100,
-    homePheromoneDistanceSquared: 200 ** 2,
+    homePheromoneDistanceSquared: 100 ** 2,
     homePheromoneFrequency:       10,
     homePheromoneLifespan:        400,
-    foodPheromoneDistanceSquared: 200 ** 2,
+    foodPheromoneDistanceSquared: 100 ** 2,
     foodPheromoneFrequency:       10,
     foodPheromoneLifespan:        400,
-    gridSize:                     200,
+    gridSize:                     100,
     maxVelocity:                  3,
     lineMultiplier:               5,
-    trail:                        0.4,
+    trail:                        0,
     showTrail:                    false,
     showFOV:                      false,
 }
@@ -38,9 +38,9 @@ class Ant {
         // All angles in radians.
         // 0 radian points east, going north increases radian.
         this.angle = Math.random() * Math.PI * 2;
-        this.viewingAngleHalf = degreeToRadians(45);
-        this.turningAngle = degreeToRadians(1);
-        this.turningRandomness = degreeToRadians(5);
+        this.viewingAngleHalf = degreeToRadians(60);
+        this.turningAngle = degreeToRadians(5);
+        this.turningRandomness = degreeToRadians(1);
 
         this.leftHomePheromones = [];
         this.rightHomePheromones = [];
