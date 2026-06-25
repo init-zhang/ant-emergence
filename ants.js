@@ -398,8 +398,16 @@ class Board {
 
         for (const ant of this.ants) {
             if (this.config.showFOV) {
+                let distance = 0;
+                if (ant.state === "FIND_FOOD") {
+                    this.ctx.strokeStyle = "magenta";
+                    distance = Math.sqrt(this.config.foodPheromoneDistanceSquared);
+                } else if (ant.state === "FOUND_FOOD") {
+                    this.ctx.strokeStyle = "green";
+                    distance = Math.sqrt(this.config.homePheromoneDistanceSquared);
+                }
+
                 // FOV arc:
-                const distance = Math.sqrt(this.config.foodPheromoneDistanceSquared);
                 this.ctx.beginPath();
                 this.ctx.arc(
                     ant.x, ant.y, distance,
