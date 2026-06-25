@@ -11,6 +11,7 @@ const defaultConfig = {
     lineMultiplier:               5,
     trail:                        0.4,
     showTrail:                    false,
+    showFOV:                      false,
 }
 
 function distanceSquared(u, v) {
@@ -396,6 +397,37 @@ class Board {
             this.ctx.fillRect(food.x - 5, food.y - 5, 10, 10);
 
         for (const ant of this.ants) {
+            if (this.config.showFOV) {
+                // FOV arc:
+                const distance = Math.sqrt(this.config.foodPheromoneDistanceSquared);
+                this.ctx.beginPath();
+                this.ctx.arc(
+                    ant.x, ant.y, distance,
+                    ant.angle - ant.viewingAngleHalf,
+                    ant.angle + ant.viewingAngleHalf
+                );
+
+                // FOV bottom line:
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.moveTo(ant.x, ant.y);
+                this.ctx.lineTo(
+                    ant.x + Math.cos(ant.angle - ant.viewingAngleHalf) * distance,
+                    ant.y + Math.sin(ant.angle - ant.viewingAngleHalf) * distance
+                );
+
+                // FOV top line:
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.moveTo(ant.x, ant.y);
+                this.ctx.lineTo(
+                    ant.x + Math.cos(ant.angle + ant.viewingAngleHalf) * distance,
+                    ant.y + Math.sin(ant.angle + ant.viewingAngleHalf) * distance
+                );
+                this.ctx.stroke();
+            }
+
+            // Ant:
             if (ant.state === "FIND_FOOD") {
                 this.ctx.fillStyle = "red";
                 this.ctx.strokeStyle = "blue";
@@ -404,6 +436,7 @@ class Board {
                 this.ctx.strokeStyle = "blue";
             }
 
+            // Direction:
             this.ctx.fillRect(ant.x - 2, ant.y - 2, 4, 4);
             this.ctx.beginPath();
             this.ctx.moveTo(ant.x, ant.y);
@@ -492,6 +525,12 @@ toggleTrailCheckbox.addEventListener("click", () => {
     defaultConfig.showTrail = toggleTrailCheckbox.checked;
 });
 toggleTrailCheckbox.dispatchEvent(new Event("click"));
+
+const toggleFOVCheckbox = document.getElementById("toggleFOV");
+toggleFOVCheckbox.addEventListener("click", () => {
+    defaultConfig.showFOV = toggleFOVCheckbox.checked;
+});
+toggleFOVCheckbox.dispatchEvent(new Event("click"));
 
 const performanceSpan = document.getElementById("performance");
 let updateStart;
