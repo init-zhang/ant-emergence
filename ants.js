@@ -578,7 +578,7 @@ function loop() {
         drawTimeCount = 0;
     }
 
-    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime.toFixed(3)}ms, Draw: ${drawTime.toFixed(3)}ms`;
+    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime.toFixed(3)}ms, Draw: ${drawTime.toFixed(3)}ms, Home: ${board.homePheromones.length}, Food: ${board.foodPheromones.length}`;
 
     if (running) requestAnimationFrame(loop);
 }
