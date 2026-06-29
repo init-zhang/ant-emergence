@@ -222,8 +222,8 @@ class Board {
         this.ants = [];
         this.homePheromones = [];
         this.foodPheromones = [];
-        this.grid = new Map();
         this.food = [];
+        this.grid = new Map();
         this.resizeCanvas();
         this.initializeAnts(antsCount);
 
@@ -346,7 +346,12 @@ class Board {
                 }
             }
 
-            for (const food of this.food) {
+            const nearbyFood = this.getNearbyType(
+                ant.x, ant.y, "FOOD",
+                this.config.foodPheromoneDistanceSquared
+            );
+
+            for (const food of nearbyFood) {
                 if (ant.canSee(food, this.config.foodPheromoneDistanceSquared)) {
                     ant.food.push(food);
                 }
@@ -578,7 +583,7 @@ function loop() {
         drawTimeCount = 0;
     }
 
-    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime.toFixed(3)}ms, Draw: ${drawTime.toFixed(3)}ms, Home: ${board.homePheromones.length}, Food: ${board.foodPheromones.length}`;
+    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime.toFixed(3)}ms, Draw: ${drawTime.toFixed(3)}ms, HomeP: ${board.homePheromones.length}, FoodP: ${board.foodPheromones.length}, Food ${board.food.length}`;
 
     if (running) requestAnimationFrame(loop);
 }
