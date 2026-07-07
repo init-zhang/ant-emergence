@@ -472,7 +472,7 @@ function addRangeListener(sliderID, config, defaultValue) {
         sliderID === "foodPheromoneDistance" ||
         sliderID === "antsDistance"
     ) {
-        input.value = Math.sqrt(config[sliderID]);
+        input.value = Math.sqrt(config[sliderID + "Squared"]);
     } else {
         input.value = config[sliderID];
     }
