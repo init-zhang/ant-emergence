@@ -360,8 +360,6 @@ class Board {
     }
 
     update() {
-        this.updateSurroundings();
-
         for (const ant of this.ants) ant.update();
         for (const ant of this.ants) ant.move();
 
@@ -546,6 +544,10 @@ toggleFOVCheckbox.addEventListener("click", () => {
 toggleFOVCheckbox.dispatchEvent(new Event("click"));
 
 const performanceSpan = document.getElementById("performance");
+let surroundingStart;
+let surroundingTimeSum = 0;
+let surroundingTimeCount = 0;
+let surroundingTime = 0;
 let updateStart;
 let updateTimeSum = 0;
 let updateTimeCount = 0;
@@ -560,6 +562,10 @@ let now;
 let fps = 0;
 
 function loop() {
+    surroundingStart = performance.now()
+    board.updateSurroundings();
+    surroundingTimeSum += performance.now() - surroundingStart;
+    surroundingTimeCount++;
     updateStart = performance.now();
     board.update();
     updateTimeSum += performance.now() - updateStart;
@@ -575,15 +581,18 @@ function loop() {
         fps = frameCount;
         frameCount = 0;
         lastTime = now;
+        surroundingTime = surroundingTimeSum / surroundingTimeCount;
         updateTime = updateTimeSum / updateTimeCount;
         drawTime = drawTimeSum / drawTimeCount;
+        surroundingTimeSum = 0;
+        surroundingTimeCount = 0;
         updateTimeSum = 0;
         updateTimeCount = 0;
         drawTimeSum = 0;
         drawTimeCount = 0;
     }
 
-    performanceSpan.textContent = `FPS: ${fps}, Update: ${updateTime.toFixed(3)}ms, Draw: ${drawTime.toFixed(3)}ms, HomeP: ${board.homePheromones.length}, FoodP: ${board.foodPheromones.length}, Food ${board.food.length}`;
+    performanceSpan.textContent = `FPS: ${fps}, Surround: ${surroundingTime.toFixed(3)}ms, Update: ${updateTime.toFixed(3)}ms, Draw: ${drawTime.toFixed(3)}ms, HomeP: ${board.homePheromones.length}, FoodP: ${board.foodPheromones.length}, Food ${board.food.length}`;
 
     if (running) requestAnimationFrame(loop);
 }
